@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+// Kapt plugin for annotation processing
+    id("kotlin-kapt")
 
 }
 
@@ -59,6 +61,9 @@ dependencies {
     implementation (libs.firebase.auth.ktx)
     implementation (libs.firebase.firestore.ktx)
     implementation (libs.firebase.storage.ktx)
+    // Firebase Auth
+    implementation(libs.google.firebase.auth.ktx)
+
 
 //    Google Sign-In Dependency
     implementation (libs.play.services.auth)

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "87507478885",
+    "project_id": "cleansync-17b3c",
+    "storage_bucket": "cleansync-17b3c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:87507478885:android:5f7b43ce8c4f0a6272998c",
+        "android_client_info": {
+          "package_name": "com.example.cleansync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCERDZ1xDbEONjVZwfootDJ0UJrLynm07s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
