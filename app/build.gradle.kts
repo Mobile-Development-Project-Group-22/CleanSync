@@ -2,7 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
 }
+
 
 android {
     namespace = "com.example.cleansync"
@@ -49,6 +51,36 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+
+
+    // Firebase dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation (libs.firebase.auth.ktx)
+    implementation (libs.firebase.firestore.ktx)
+    implementation (libs.firebase.storage.ktx)
+
+//    Google Sign-In Dependency
+    implementation (libs.play.services.auth)
+
+    // navigation dependencies
+    implementation (libs.androidx.navigation.compose)
+
+    // Retrofit (for API calls)
+    implementation (libs.retrofit)
+    // Gson converter for JSON parsing
+    implementation (libs.converter.gson)
+    //    For logging network requests
+    implementation (libs.logging.interceptor)
+
+    // Coroutines
+    implementation (libs.kotlinx.coroutines.core )
+    // Coroutines core
+    implementation (libs.kotlinx.coroutines.android)
+    // viewmodel and livedata
+    implementation (libs.androidx.lifecycle.viewmodel.ktx)
+
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
