@@ -23,9 +23,9 @@ import com.example.cleansync.ui.auth.AuthViewModel
 
 
 @Composable
-fun HomeScreen(
+fun  HomeScreen(
     navController: NavController,
-    authViewModel: AuthViewModel // Pass AuthViewModel instead of HomeViewModel
+    authViewModel: AuthViewModel
 ) {
     val loginState by authViewModel.loginState.collectAsState()
 
@@ -40,32 +40,58 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (loginState is AuthState.Success) {
-                Text(
-                    text = "Welcome to Home Screen!",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(16.dp))
 
-                Button(onClick = {
-                    authViewModel.logout() // Call logout
-                    navController.navigate(Screen.LoginScreen.route) // Navigate to LoginScreen
-                }) {
-                    Text("Logout")
+
+            when (loginState) {
+                is AuthState.Success -> {
+                    Text(
+                        text = "Welcome to Home Screen!",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(onClick = {
+                        authViewModel.logout()
+                        navController.navigate(Screen.LoginScreen.route) {
+                            popUpTo(Screen.HomeScreen.route) { inclusive = true }
+                        }
+                    }) {
+                        Text("Logout")
+                    }
                 }
-            } else {
-                Text(
-                    text = "You are not logged in!",
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                is AuthState.Error -> {
+                    Text(
+                        text = "Authentication failed. Please try again.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Button(onClick = {
-                    navController.navigate(Screen.LoginScreen.route)
-                }) {
-                    Text("Login")
+                    Button(onClick = {
+                        navController.navigate(Screen.LoginScreen.route)
+                    }) {
+                        Text("Login")
+                    }
+                }
+                is AuthState.Loading -> {
+                    // Add a loading spinner while the authentication state is being processed
+                    Text("Loading...", style = MaterialTheme.typography.bodyLarge)
+                }
+                else -> {
+                    Text(
+                        text = "You are not logged in!",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(onClick = {
+                        navController.navigate(Screen.LoginScreen.route)
+                    }) {
+                        Text("Login")
+                    }
                 }
             }
         }
     }
 }
+
