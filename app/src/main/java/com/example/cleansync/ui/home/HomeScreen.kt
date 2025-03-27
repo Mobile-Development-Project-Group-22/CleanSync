@@ -54,7 +54,9 @@ fun  HomeScreen(
                         authViewModel.logout()
                         navController.navigate(Screen.LoginScreen.route) {
                             popUpTo(Screen.HomeScreen.route) { inclusive = true }
+                            launchSingleTop = true
                         }
+
                     }) {
                         Text("Logout")
                     }

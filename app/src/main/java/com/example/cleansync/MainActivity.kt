@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,12 +28,15 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.cleansync.navigation.BottomNavigationBar
 import com.example.cleansync.navigation.Screen
+import com.example.cleansync.ui.auth.AuthState
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.auth.LoginScreen
+import com.example.cleansync.ui.auth.ResetPasswordScreen
 import com.example.cleansync.ui.auth.SignupScreen
 import com.example.cleansync.ui.booking.BookingScreen
 import com.example.cleansync.ui.home.HomeScreen
 import com.example.cleansync.ui.profile.ProfileScreen
+import com.example.cleansync.ui.profile.ProfileUpdateScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,6 +57,9 @@ fun CleanSyncApp() {
     // Get the current backstack entry to check the selected tab
     val backStackEntry by navController.currentBackStackEntryAsState()
 
+    // Get login state
+    val loginState by authViewModel.loginState.collectAsState()
+
     // Function to get the title based on the current screen
     val currentScreenTitle = when (backStackEntry?.destination?.route) {
         Screen.LoginScreen.route -> "Login"
@@ -63,35 +70,68 @@ fun CleanSyncApp() {
         else -> "CleanSync" // Default title if no match
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(currentScreenTitle) } // Dynamically set the title
-            )
-        },
-        bottomBar = {
-            BottomNavigationBar(navController) // Use BottomNavigationBar here
-        },
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.LoginScreen.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Screen.LoginScreen.route) {
-                LoginScreen(navController = navController, authViewModel = authViewModel)
+    // Show login screen or main app based on login state
+    if (loginState is AuthState.Success) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(currentScreenTitle) } // Dynamically set the title
+                )
+            },
+            bottomBar = {
+                BottomNavigationBar(navController) // Use BottomNavigationBar here
+            },
+        ) { innerPadding ->
+            val startDestination = if (loginState is AuthState.Success) {
+                Screen.HomeScreen.route
+            } else {
+                Screen.LoginScreen.route
             }
-            composable(Screen.SignupScreen.route) {
-                SignupScreen(navController = navController, authViewModel = authViewModel)
+            NavHost(
+                navController = navController,
+                startDestination = startDestination, // Start at Home screen after login
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.HomeScreen.route) {
+                    HomeScreen(navController = navController, authViewModel = authViewModel)
+                }
+                composable(Screen.BookingScreen.route) {
+                    BookingScreen(navController = navController)
+                }
+                composable(Screen.ProfileScreen.route) {
+                    ProfileScreen(navController = navController, authViewModel = authViewModel)
+                }
+                composable(Screen.ProfileUpdateScreen.route) {
+                    ProfileUpdateScreen(navController = navController, authViewModel = authViewModel)
+                }
+
             }
-            composable(Screen.HomeScreen.route) {
-                HomeScreen(navController = navController, authViewModel = authViewModel)
+        }
+    } else {
+        // Show the login or signup screens if the user is not logged in
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(currentScreenTitle) }
+                )
             }
-            composable(Screen.BookingScreen.route) {
-                BookingScreen(navController = navController)
-            }
-            composable(Screen.ProfileScreen.route) {
-                ProfileScreen(navController = navController, authViewModel = authViewModel)
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = Screen.LoginScreen.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.LoginScreen.route) {
+                    LoginScreen(navController = navController, authViewModel = authViewModel)
+                }
+                composable(Screen.SignupScreen.route) {
+                    SignupScreen(navController = navController, authViewModel = authViewModel)
+                }
+                composable(Screen.ResetPasswordScreen.route) {
+                    ResetPasswordScreen(
+                        navController = navController,
+                        authViewModel = authViewModel)
+                }
             }
         }
     }

@@ -143,6 +143,15 @@ fun LoginScreen(
                     navController.navigate(Screen.SignupScreen.route)
                 }
             )
+
+            // Navigate to ResetPasswordScreen if the user forgets the password
+            Text(
+                text = "Forgot password?",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.clickable {
+                    navController.navigate(Screen.ResetPasswordScreen.route)
+                }
+            )
         }
 
         // Show loading indicator if login is in progress
