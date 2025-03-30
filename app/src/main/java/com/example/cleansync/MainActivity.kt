@@ -21,6 +21,7 @@ import com.example.cleansync.navigation.NavigationItem
 import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.auth.LoginScreen
+import com.example.cleansync.ui.auth.PasswordResetScreen
 import com.example.cleansync.ui.auth.SignupScreen
 import com.example.cleansync.ui.booking.BookingScreen
 import com.example.cleansync.ui.home.HomeScreen
@@ -79,6 +80,9 @@ fun CleanSyncApp() {
             }
             composable(Screen.BookingScreen.route) {
                 BookingScreen(navController = navController)
+            }
+            composable(Screen.PasswordResetScreen.route) {
+                PasswordResetScreen(navController = navController)
             }
         }
     }
