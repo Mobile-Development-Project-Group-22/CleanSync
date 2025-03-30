@@ -64,7 +64,7 @@ class ProfileViewModel(
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                val result = authManager.reauthenticateUser(email, password)
+                val result = authManager.reauthenticateWithEmailPassword(email, password)
                 if (result.isSuccess) {
                     _profileState.value = ProfileState.Success(currentUser)
                 } else {
@@ -83,7 +83,7 @@ class ProfileViewModel(
         viewModelScope.launch {
             try {
                 // Reauthenticate the user with the current password before deleting the account
-                val result = authManager.reauthenticateUser(currentUser?.email ?: "", currentPassword)
+                val result = authManager.reauthenticateWithEmailPassword(currentUser?.email ?: "", currentPassword)
                 if (result.isSuccess) {
                     // Proceed to delete the user account if reauthentication is successful
                     authManager.deleteUser()
@@ -93,6 +93,49 @@ class ProfileViewModel(
                 }
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to delete user account: ${e.message}")
+            }
+        }
+    }
+
+    // verify the password
+    fun verifyPassword(currentPassword: String, param: (Any) -> Unit) {
+        _profileState.value = ProfileState.Loading
+        viewModelScope.launch {
+            try {
+                val result = authManager.reauthenticateWithEmailPassword(currentUser?.email ?: "", currentPassword)
+                if (result.isSuccess) {
+                    _profileState.value = ProfileState.Success(null) // Password verified successfully
+                } else {
+                    _profileState.value = ProfileState.Error("Password verification failed")
+                }
+            } catch (e: Exception) {
+                _profileState.value = ProfileState.Error("Failed to verify password: ${e.message}")
+            }
+        }
+    }
+
+    // Send password reset email
+    fun sendPasswordResetEmail(email: String) {
+        _profileState.value = ProfileState.Loading
+        viewModelScope.launch {
+            try {
+                authManager.sendPasswordResetEmail(email)
+                _profileState.value = ProfileState.Success(null) // Indicate success
+            } catch (e: Exception) {
+                _profileState.value = ProfileState.Error("Failed to send password reset email: ${e.message}")
+            }
+        }
+    }
+    // change password
+    fun changePassword(currentPassword: String, newPassword: String) {
+        _profileState.value = ProfileState.Loading
+        viewModelScope.launch {
+            try {
+                // Use authManager to update the password
+                authManager.updatePassword(newPassword)
+                _profileState.value = ProfileState.Success(null) // Password updated successfully
+            } catch (e: Exception) {
+                _profileState.value = ProfileState.Error("Failed to update password: ${e.message}")
             }
         }
     }
