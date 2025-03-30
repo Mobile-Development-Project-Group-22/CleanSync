@@ -204,7 +204,7 @@ fun ProfileScreen(
                 ),
                 elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {
-                Text(text = "Update Profile", style = MaterialTheme.typography.labelSmall)
+                Text(text = "Update Profile", style = MaterialTheme.typography.labelLarge)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -219,7 +219,7 @@ fun ProfileScreen(
                 shape = MaterialTheme.shapes.medium,
                 elevation = ButtonDefaults.buttonElevation(4.dp)
             ) {
-                Text(text = "Delete Account", style = MaterialTheme.typography.labelSmall)
+                Text(text = "Delete Account", style = MaterialTheme.typography.labelLarge)
             }
         }
 
