@@ -18,6 +18,7 @@ import com.example.cleansync.ui.auth.LoginScreen
 import com.example.cleansync.ui.auth.PasswordResetScreen
 import com.example.cleansync.ui.auth.SignupScreen
 import com.example.cleansync.ui.booking.BookingScreen
+import com.example.cleansync.ui.booking.BookingViewModel
 import com.example.cleansync.ui.home.HomeScreen
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
@@ -44,27 +45,94 @@ fun CleanSyncApp() {
             startDestination = if (isLoggedIn) Screen.HomeScreen.route else Screen.LoginScreen.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            // Navigation for login screen
             composable(Screen.LoginScreen.route) {
-                LoginScreen(navController = navController, authViewModel = authViewModel, onLoginSuccess = {
+                if (isLoggedIn) {
+                    // Redirect to HomeScreen if already logged in
                     navController.navigate(Screen.HomeScreen.route) {
                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                     }
-                })
+                } else {
+                    LoginScreen(
+                        navController = navController,
+                        authViewModel = authViewModel,
+                        onLoginSuccess = {
+                            navController.navigate(Screen.HomeScreen.route) {
+                                popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                            }
+                        }
+                    )
+                }
             }
+
+            // Navigation for signup screen
             composable(Screen.SignupScreen.route) {
-                SignupScreen(navController = navController, authViewModel = authViewModel)
+                if (isLoggedIn) {
+                    // Redirect to HomeScreen if already logged in
+                    navController.navigate(Screen.HomeScreen.route) {
+                        popUpTo(Screen.SignupScreen.route) { inclusive = true }
+                    }
+                } else {
+                    SignupScreen(navController = navController, authViewModel = authViewModel)
+                }
             }
+
+            // Navigation for HomeScreen (logged-in user only)
             composable(Screen.HomeScreen.route) {
-                HomeScreen(navController = navController, authViewModel = authViewModel)
+                if (!isLoggedIn) {
+                    // Redirect to LoginScreen if not logged in
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(Screen.HomeScreen.route) { inclusive = true }
+                    }
+                } else {
+                    HomeScreen(navController = navController, authViewModel = authViewModel)
+                }
             }
+
+            // Navigation for ProfileScreen
             composable(Screen.ProfileScreen.route) {
-                ProfileScreen(navController = navController, profileViewModel = ProfileViewModel())
+                if (!isLoggedIn) {
+                    // Redirect to LoginScreen if not logged in
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                    }
+                } else {
+                    ProfileScreen(navController = navController, profileViewModel = ProfileViewModel())
+                }
             }
+
+            // Navigation for BookingScreen
             composable(Screen.BookingScreen.route) {
-                BookingScreen(navController = navController)
+                if (!isLoggedIn) {
+                    // Redirect to LoginScreen if not logged in
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(Screen.BookingScreen.route) { inclusive = true }
+                    }
+                } else {
+                    BookingScreen(
+                        bookingViewModel = BookingViewModel(),
+                        onBookingConfirmed = {
+                            // Handle booking confirmation
+                            navController.navigate(Screen.BookingConfirmationScreen.route)
+                        },
+                        onBookingCancelled = {
+                            // Handle booking cancellation
+                            navController.navigate(Screen.HomeScreen.route)
+                        }
+                    )
+                }
             }
+
+            // Navigation for PasswordResetScreen
             composable(Screen.PasswordResetScreen.route) {
-                PasswordResetScreen(navController = navController)
+                if (isLoggedIn) {
+                    // Redirect to HomeScreen if already logged in
+                    navController.navigate(Screen.HomeScreen.route) {
+                        popUpTo(Screen.PasswordResetScreen.route) { inclusive = true }
+                    }
+                } else {
+                    PasswordResetScreen(navController = navController)
+                }
             }
         }
     }
