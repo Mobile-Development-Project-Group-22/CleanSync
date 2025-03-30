@@ -3,6 +3,8 @@ package com.example.cleansync.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.FirebaseAuthManager
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -28,8 +30,14 @@ class AuthViewModel(
             val result = authManager.signIn(email, password)
             _authState.value = result.fold(
                 onSuccess = { AuthState.Success(it) },
-                onFailure = { AuthState.Error(it.message ?: "Unknown error") }
-            )
+                onFailure = {
+                    val errorMessage = when (it) {
+                        is FirebaseAuthInvalidUserException -> "User not found. Please sign up."
+                        is FirebaseAuthInvalidCredentialsException -> "Incorrect password. Please try again."
+                        else -> it.message ?: "Authentication failed"
+                    }
+                    AuthState.Error(errorMessage)
+                }            )
         }
     }
 

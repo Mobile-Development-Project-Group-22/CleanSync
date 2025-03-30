@@ -41,14 +41,12 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.navigation.Screen
 
-
-
-
 @Composable
 fun SignupScreen(
     navController: NavController,
     authViewModel: AuthViewModel
 ) {
+    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -84,6 +82,19 @@ fun SignupScreen(
         ) {
             Text(text = "Sign Up", style = MaterialTheme.typography.headlineLarge)
             Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = email,
@@ -146,7 +157,7 @@ fun SignupScreen(
                 onClick = {
                     if (password == confirmPassword) {
                         authViewModel.signUp(
-                            name = email.substringBefore("@"), // Assuming name is part of the email before '@'
+                            name = name,
                             email = email,
                             password = password
                         )
@@ -176,7 +187,6 @@ fun SignupScreen(
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

@@ -24,7 +24,9 @@ class ProfileViewModel(
         viewModelScope.launch {
             try {
                 authManager.updateUserProfile(displayName, photoUri)
-                _profileState.value = ProfileState.Success(currentUser)
+                // **Re-fetch the user to get the latest data**
+                authManager.refreshUser()
+                _profileState.value = ProfileState.Success(authManager.currentUser)
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update profile: ${e.message}")
             }
@@ -75,17 +77,26 @@ class ProfileViewModel(
     }
 
     // Delete user account
-    fun deleteUser() {
+    // Delete user account after re-authenticating with the current password
+    fun deleteUser(currentPassword: String) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                authManager.deleteUser()
-                _profileState.value = ProfileState.Success(null) // Return null to indicate no user
+                // Reauthenticate the user with the current password before deleting the account
+                val result = authManager.reauthenticateUser(currentUser?.email ?: "", currentPassword)
+                if (result.isSuccess) {
+                    // Proceed to delete the user account if reauthentication is successful
+                    authManager.deleteUser()
+                    _profileState.value = ProfileState.Success(null) // Indicate no user after deletion
+                } else {
+                    _profileState.value = ProfileState.Error("Reauthentication failed")
+                }
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to delete user account: ${e.message}")
             }
         }
     }
+
 }
 
 // UI States for Profile
