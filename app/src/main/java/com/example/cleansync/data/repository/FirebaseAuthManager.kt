@@ -3,6 +3,7 @@ package com.example.cleansync.data.repository
 import android.net.Uri
 import android.util.Log
 import com.example.cleansync.data.model.User
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -34,13 +35,23 @@ class FirebaseAuthManager {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user
-            firebaseUser?.let { saveUserToFirestore(it.uid, name, email) }
+            firebaseUser?.let {
+                // Set display name in Firebase Authentication
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(name) // Set the user's name
+                    .build()
+                it.updateProfile(profileUpdates).await()
+
+                // Save user details to Firestore
+                saveUserToFirestore(it.uid, name, email)
+            }
             Result.success(firebaseUser)
         } catch (e: Exception) {
             Log.e("FirebaseAuthManager", "Sign-up failed: ${e.message}")
             Result.failure(e)
         }
     }
+
 
     // Save user details to Firestore
     private suspend fun saveUserToFirestore(uid: String, name: String, email: String) {
@@ -63,9 +74,22 @@ class FirebaseAuthManager {
 
         try {
             user?.updateProfile(profileUpdates)?.await()
-            Log.d("FirebaseAuthManager", "User profile updated.")
+            refreshUser() // Ensure we get the latest updated user
+            Log.d("FirebaseAuthManager", "User profile updated and refreshed.")
         } catch (e: Exception) {
             Log.e("FirebaseAuthManager", "Error updating profile: ${e.message}")
+        }
+    }
+
+
+    // Reload user to get updated profile data
+    suspend fun refreshUser() {
+        val user = auth.currentUser
+        try {
+            user?.reload()?.await()
+            Log.d("FirebaseAuthManager", "User refreshed successfully.")
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error refreshing user: ${e.message}")
         }
     }
 
@@ -115,7 +139,7 @@ class FirebaseAuthManager {
     // Re-authenticate user (useful for sensitive operations like updating email)
     suspend fun reauthenticateUser(email: String, password: String): Result<Boolean> {
         val user = auth.currentUser
-        val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, password)
+        val credential = EmailAuthProvider.getCredential(email, password)
 
         return try {
             user?.reauthenticate(credential)?.await()
