@@ -4,76 +4,63 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.FirebaseAuthManager
 import com.google.firebase.auth.FirebaseUser
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
+class AuthViewModel(
+    private val authManager: FirebaseAuthManager = FirebaseAuthManager()
+) : ViewModel() {
 
-    private val authManager = FirebaseAuthManager()
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
+    val authState: StateFlow<AuthState> get() = _authState
 
-    // State variables for UI
-    private val _registerState = MutableStateFlow<AuthState>(AuthState.Idle)
-    val registerState: StateFlow<AuthState> = _registerState
+    val currentUser: FirebaseUser? get() = authManager.currentUser
 
-    private val _loginState = MutableStateFlow<AuthState>(AuthState.Idle)
-    val loginState: StateFlow<AuthState> = _loginState
+    // Derived state to check if user is logged in
+    val isLoggedIn: StateFlow<Boolean> = _authState
+        .map { it is AuthState.Success && it.user != null }
+        .stateIn(viewModelScope, SharingStarted.Lazily, currentUser != null)
 
-    fun registerUser(name: String, email: String, password: String) {
-        _registerState.value = AuthState.Loading  // Set loading state
-
-        val validationMessage = validateInput(name, email, password)
-        if (validationMessage != null) {
-            _registerState.value = AuthState.Error(validationMessage.toString())
-            return
-        }
-
+    // Sign in with email and password
+    fun signIn(email: String, password: String) {
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val result = authManager.registerUser(name, email, password)
-
-            if (result.isSuccess) {
-                _registerState.value = AuthState.Success(result.getOrNull())
-            } else {
-                _registerState.value = AuthState.Error("Registration Error: " + (result.exceptionOrNull()?.message ?: "Registration failed"))
-            }
+            val result = authManager.signIn(email, password)
+            _authState.value = result.fold(
+                onSuccess = { AuthState.Success(it) },
+                onFailure = { AuthState.Error(it.message ?: "Unknown error") }
+            )
         }
     }
 
-
-    fun validateInput(name: String, email: String, password: String): String? {
-        return when {
-            name.isEmpty() -> "Name cannot be empty"
-            email.isEmpty() -> "Email cannot be empty"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Invalid email format"
-            password.isEmpty() -> "Password cannot be empty"
-            password.length < 6 -> "Password must be at least 6 characters"
-            else -> null // Input is valid
-        }
-    }
-
-
-
-
-
-    fun loginUser(email: String, password: String) {
-        _loginState.value = AuthState.Loading  // Set loading state
-
-        // Call the suspend function within a coroutine
+    // Sign up with name, email, and password
+    fun signUp(name: String, email: String, password: String) {
+        _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val result = authManager.loginUser(email, password)
-
-            if (result.isSuccess) {
-                _loginState.value = AuthState.Success(result.getOrNull())
-            } else {
-                _loginState.value = AuthState.Error(result.exceptionOrNull()?.message ?: "Login failed")
-            }
+            val result = authManager.signUp(name, email, password)
+            _authState.value = result.fold(
+                onSuccess = { AuthState.Success(it) },
+                onFailure = { AuthState.Error(it.message ?: "Unknown error") }
+            )
         }
     }
 
-    fun logout() {
-        authManager.logout()
-        // Optionally, update the UI state to reflect that the user is logged out
-        _loginState.value = AuthState.Idle
+    // Sign out user
+    fun signOut() {
+        authManager.signOut()
+        _authState.value = AuthState.Idle
+    }
+
+    // Reauthenticate user for sensitive operations (e.g., updating email, password, or deleting account)
+    fun reauthenticateUser(email: String, password: String) {
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            val result = authManager.reauthenticateUser(email, password)
+            _authState.value = result.fold(
+                onSuccess = { AuthState.Success(null) },  // Re-authentication successful
+                onFailure = { AuthState.Error(it.message ?: "Re-authentication failed") }
+            )
+        }
     }
 }
 

@@ -1,8 +1,11 @@
 package com.example.cleansync.data.repository
 
+import android.net.Uri
 import android.util.Log
+import com.example.cleansync.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -11,49 +14,116 @@ class FirebaseAuthManager {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    // Register user with suspend function
-    suspend fun registerUser(name: String, email: String, password: String): Result<FirebaseUser?> {
+    // Get current logged-in user
+    val currentUser: FirebaseUser?
+        get() = auth.currentUser
+
+    // Sign in with email and password
+    suspend fun signIn(email: String, password: String): Result<FirebaseUser?> {
         return try {
-            val authResult = auth.createUserWithEmailAndPassword(email, password).await()
-            val user = authResult.user ?: return Result.failure(Exception("User creation failed"))
-
-            val userMap = hashMapOf(
-                "name" to name,
-                "email" to email,
-                "profilePicture" to ""
-            )
-
-            firestore.collection("users").document(user.uid).set(userMap).await()
-            Result.success(user)
+            val result = auth.signInWithEmailAndPassword(email, password).await()
+            Result.success(result.user)
         } catch (e: Exception) {
-            // Log the error message for debugging purposes
-            Log.e("FirebaseAuthManager", "Error registering user: ${e.message}", e)
-
-            // Handle specific Firebase errors (Optional: add more specific error handling)
-            when (e) {
-                is com.google.firebase.auth.FirebaseAuthUserCollisionException -> {
-                    return Result.failure(Exception("User already exists"))
-                }
-                is com.google.firebase.auth.FirebaseAuthWeakPasswordException -> {
-                    return Result.failure(Exception("Weak password"))
-                }
-                else -> return Result.failure(e)
-            }
-        }
-    }
-
-    suspend fun loginUser(email: String, password: String): Result<FirebaseUser?> {
-        return try {
-            val authResult = auth.signInWithEmailAndPassword(
-                email,
-                password
-            ).await()
-            Result.success(authResult.user)
-        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Sign-in failed: ${e.message}")
             Result.failure(e)
         }
     }
-    fun logout() {
+
+    // Sign up with email and password
+    suspend fun signUp(name: String, email: String, password: String): Result<FirebaseUser?> {
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, password).await()
+            val firebaseUser = result.user
+            firebaseUser?.let { saveUserToFirestore(it.uid, name, email) }
+            Result.success(firebaseUser)
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Sign-up failed: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    // Save user details to Firestore
+    private suspend fun saveUserToFirestore(uid: String, name: String, email: String) {
+        val user = User(uid = uid, name = name, email = email)
+        firestore.collection("users").document(uid).set(user).await()
+    }
+
+    // Sign out user
+    fun signOut() {
         auth.signOut()
+    }
+
+    // Update user's profile (display name, photo URL)
+    suspend fun updateUserProfile(displayName: String, photoUri: Uri?) {
+        val user = auth.currentUser
+        val profileUpdates = UserProfileChangeRequest.Builder()
+            .setDisplayName(displayName)
+            .setPhotoUri(photoUri)
+            .build()
+
+        try {
+            user?.updateProfile(profileUpdates)?.await()
+            Log.d("FirebaseAuthManager", "User profile updated.")
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error updating profile: ${e.message}")
+        }
+    }
+
+    // Send email verification
+    suspend fun sendVerificationEmail() {
+        val user = auth.currentUser
+        try {
+            user?.sendEmailVerification()?.await()
+            Log.d("FirebaseAuthManager", "Verification email sent.")
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error sending verification email: ${e.message}")
+        }
+    }
+
+    // Update user's email
+    suspend fun updateEmail(newEmail: String) {
+        val user = auth.currentUser
+        try {
+            user?.updateEmail(newEmail)?.await()
+            Log.d("FirebaseAuthManager", "User email updated.")
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error updating email: ${e.message}")
+        }
+    }
+
+    // Send password reset email
+    suspend fun sendPasswordResetEmail(email: String) {
+        try {
+            auth.sendPasswordResetEmail(email).await()
+            Log.d("FirebaseAuthManager", "Password reset email sent.")
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error sending reset email: ${e.message}")
+        }
+    }
+
+    // Delete user account
+    suspend fun deleteUser() {
+        val user = auth.currentUser
+        try {
+            user?.delete()?.await()
+            Log.d("FirebaseAuthManager", "User account deleted.")
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error deleting user: ${e.message}")
+        }
+    }
+
+    // Re-authenticate user (useful for sensitive operations like updating email)
+    suspend fun reauthenticateUser(email: String, password: String): Result<Boolean> {
+        val user = auth.currentUser
+        val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, password)
+
+        return try {
+            user?.reauthenticate(credential)?.await()
+            Log.d("FirebaseAuthManager", "User re-authenticated.")
+            Result.success(true)
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthManager", "Error re-authenticating user: ${e.message}")
+            Result.failure(e)
+        }
     }
 }
