@@ -9,22 +9,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -50,10 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.cleansync.R
 import com.example.cleansync.navigation.Screen
-
-
+import com.google.firebase.auth.GoogleAuthProvider
+import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,11 +60,12 @@ fun ProfileScreen(
     var newDisplayName by remember { mutableStateOf("") }
     var currentPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }  // Store selected image URI
 
     // Language preference state
-    var selectedLanguage by remember { mutableStateOf("en") }  // Default language is English
+    var selectedLanguage by remember { mutableStateOf("en") }
     val languageOptions = listOf("English", "Spanish", "French")
-    var expanded by remember { mutableStateOf(false) } // For managing the dropdown menu expansion state
+    var expanded by remember { mutableStateOf(false) }
 
     // Notification preferences state
     var emailNotificationsEnabled by remember { mutableStateOf(true) }
@@ -92,7 +82,6 @@ fun ProfileScreen(
             )
         }
 
-        // TopAppBar with fixed height and no padding
         TopAppBar(
             title = {
                 Text(
@@ -111,23 +100,19 @@ fun ProfileScreen(
                 .height(70.dp)
         )
 
-        // Add a spacer to maintain proper gap between TopAppBar and content
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp,
-                    end = 16.dp,
-                     top = 54.dp
-                ),  // Adjust padding for the rest of the content
+                .padding(start = 16.dp, end = 16.dp, top = 54.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(72.dp)) // Space for TopAppBar
+            Spacer(modifier = Modifier.height(72.dp))
 
             // Profile Image
             val imagePainter = rememberAsyncImagePainter(
-                model = currentUser?.photoUrl ?: Uri.parse("https://example.com/default_profile.png"),
+                model = currentUser?.photoUrl
+                    ?: "https://png.pngtree.com/png-clipart/20231019/original/pngtree-user-profile-avatar-png-image_13369989.png".toUri(),
             )
             Image(
                 painter = imagePainter,
@@ -137,6 +122,9 @@ fun ProfileScreen(
                     .clip(CircleShape)
                     .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     .padding(4.dp)
+                    .clickable {
+                        // Implement image picker logic here (e.g., using an image picker library)
+                    }
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
@@ -157,7 +145,8 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Language Preferences Section
-            Text(text = "Language Preferences",
+            Text(
+                text = "Language Preferences",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth(),
                 fontWeight = FontWeight.Bold,
@@ -170,15 +159,15 @@ fun ProfileScreen(
                 expanded = expanded,
                 onExpandedChange = { expanded = it },
                 onButtonClicked = {
-                    // Handle the button click, for example, show a message
                     Toast.makeText(context, "Change language button clicked", Toast.LENGTH_SHORT).show()
                 }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Notification Preferences Section to the left side
-            Text(text = "Notification Preferences",
+            // Notification Preferences Section
+            Text(
+                text = "Notification Preferences",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.fillMaxWidth(),
                 fontWeight = FontWeight.Bold,
@@ -223,7 +212,6 @@ fun ProfileScreen(
             }
         }
 
-        // Handle Success/Error States
         LaunchedEffect(profileState) {
             when (profileState) {
                 is ProfileState.Error -> {
@@ -264,7 +252,7 @@ fun ProfileScreen(
                     Button(
                         onClick = {
                             if (newDisplayName.isNotEmpty()) {
-                                profileViewModel.updateUserProfile(newDisplayName, null)
+                                profileViewModel.updateUserProfile(newDisplayName, selectedImageUri)
                                 showUpdateProfileDialog = false
                             } else {
                                 errorMessage = "Display Name cannot be empty"
@@ -291,18 +279,22 @@ fun ProfileScreen(
                 title = { Text(text = "Confirm Account Deletion") },
                 text = {
                     Column {
-                        Text("Please enter your current password to delete your account.")
-                        TextField(
-                            value = currentPassword,
-                            onValueChange = { currentPassword = it },
-                            label = { Text("Current Password") },
-                            visualTransformation = PasswordVisualTransformation(),
-                            isError = errorMessage.isNotEmpty(),
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.textFieldColors(
-                                focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                        if (currentUser?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true) {
+                            Text("You are signed in with Google. Please confirm to delete your account.")
+                        } else {
+                            Text("Please enter your current password to delete your account.")
+                            TextField(
+                                value = currentPassword,
+                                onValueChange = { currentPassword = it },
+                                label = { Text("Current Password") },
+                                visualTransformation = PasswordVisualTransformation(),
+                                isError = errorMessage.isNotEmpty(),
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = TextFieldDefaults.textFieldColors(
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                                )
                             )
-                        )
+                        }
                         if (errorMessage.isNotEmpty()) {
                             Text(
                                 text = errorMessage,
@@ -315,11 +307,57 @@ fun ProfileScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            if (currentPassword.isNotEmpty()) {
-                                profileViewModel.deleteUser(currentPassword)
-                                showDeleteDialog = false
+                            if (currentUser?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true) {
+                                profileViewModel.reAuthenticateAndDeleteUser(
+                                    password = null,
+                                    context = context,
+                                    onSuccess = {
+                                        showDeleteDialog = false
+                                        navController.navigate(Screen.LoginScreen.route) {
+                                            popUpTo(Screen.ProfileScreen.route) {
+                                                inclusive = true
+                                            } // Ensures the profile screen is removed from the back stack
+                                        }
+                                        Toast.makeText(
+                                            context,
+                                            "Account deleted successfully",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    },
+                                    onFailure = { errorMessage ->
+                                        Toast.makeText(context, errorMessage, Toast.LENGTH_LONG)
+                                            .show()
+                                    }
+
+
+                                )
                             } else {
-                                errorMessage = "Password cannot be empty"
+                                if (currentPassword.isNotEmpty()) {
+                                    profileViewModel.reAuthenticateAndDeleteUser(
+                                        password = currentPassword,
+                                        onSuccess = {
+                                            showDeleteDialog = false
+                                            navController.navigate(Screen.LoginScreen.route) {
+                                                popUpTo(Screen.ProfileScreen.route) {
+                                                    inclusive = true
+                                                } // Ensures the profile screen is removed from the back stack
+                                            }
+                                            Toast.makeText(
+                                                context,
+                                                "Account deleted successfully",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        },
+                                        onFailure = { errorMessage ->
+                                            Toast.makeText(context, errorMessage, Toast.LENGTH_LONG)
+                                                .show()
+
+                                        },
+                                        context = context
+                                    )
+                                } else {
+                                    errorMessage = "Password cannot be empty"
+                                }
                             }
                         }
                     ) {
@@ -337,9 +375,6 @@ fun ProfileScreen(
         }
     }
 }
-
-
-
 
 @Preview(showBackground = true)
 @Composable

@@ -1,147 +1,163 @@
 package com.example.cleansync.ui.profile
 
+import android.content.Context
+import android.net.Uri
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cleansync.data.repository.FirebaseAuthManager
+import com.example.cleansync.data.repository.ProfileManager
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.firebase.auth.AuthCredential
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import android.net.Uri
 
 class ProfileViewModel(
-    private val authManager: FirebaseAuthManager = FirebaseAuthManager()
+    private val profileManager: ProfileManager = ProfileManager()
 ) : ViewModel() {
-
+    private val auth = FirebaseAuth.getInstance()
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Idle)
     val profileState: StateFlow<ProfileState> get() = _profileState
 
-    val currentUser: FirebaseUser? get() = authManager.currentUser
+    val currentUser = profileManager.currentUser
 
-    // Update user profile (display name, photo URL)
+    // Update user profile
     fun updateUserProfile(displayName: String, photoUri: Uri?) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                authManager.updateUserProfile(displayName, photoUri)
-                // **Re-fetch the user to get the latest data**
-                authManager.refreshUser()
-                _profileState.value = ProfileState.Success(authManager.currentUser)
+                profileManager.updateUserProfile(displayName, photoUri)
+                _profileState.value = ProfileState.Success(profileManager.currentUser)
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update profile: ${e.message}")
             }
         }
     }
 
-    // Update user's email
+    // Update email
     fun updateEmail(newEmail: String) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                authManager.updateEmail(newEmail)
-                _profileState.value = ProfileState.Success(currentUser)
+                profileManager.updateEmail(newEmail)
+                _profileState.value = ProfileState.Success(profileManager.currentUser)
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update email: ${e.message}")
             }
         }
     }
 
-    // Send email verification
-    fun sendVerificationEmail() {
-        _profileState.value = ProfileState.Loading
-        viewModelScope.launch {
-            try {
-                authManager.sendVerificationEmail()
-                _profileState.value = ProfileState.Success(currentUser)
-            } catch (e: Exception) {
-                _profileState.value = ProfileState.Error("Failed to send verification email: ${e.message}")
-            }
-        }
-    }
-
-    // Re-authenticate user before performing sensitive operations (e.g., updating email)
-    fun reauthenticateUser(email: String, password: String) {
-        _profileState.value = ProfileState.Loading
-        viewModelScope.launch {
-            try {
-                val result = authManager.reauthenticateWithEmailPassword(email, password)
-                if (result.isSuccess) {
-                    _profileState.value = ProfileState.Success(currentUser)
-                } else {
-                    _profileState.value = ProfileState.Error("Reauthentication failed")
-                }
-            } catch (e: Exception) {
-                _profileState.value = ProfileState.Error("Reauthentication failed: ${e.message}")
-            }
-        }
-    }
-
-    // Delete user account
-    // Delete user account after re-authenticating with the current password
-    fun deleteUser(currentPassword: String) {
-        _profileState.value = ProfileState.Loading
-        viewModelScope.launch {
-            try {
-                // Reauthenticate the user with the current password before deleting the account
-                val result = authManager.reauthenticateWithEmailPassword(currentUser?.email ?: "", currentPassword)
-                if (result.isSuccess) {
-                    // Proceed to delete the user account if reauthentication is successful
-                    authManager.deleteUser()
-                    _profileState.value = ProfileState.Success(null) // Indicate no user after deletion
-                } else {
-                    _profileState.value = ProfileState.Error("Reauthentication failed")
-                }
-            } catch (e: Exception) {
-                _profileState.value = ProfileState.Error("Failed to delete user account: ${e.message}")
-            }
-        }
-    }
-
-    // verify the password
-    fun verifyPassword(currentPassword: String, param: (Any) -> Unit) {
-        _profileState.value = ProfileState.Loading
-        viewModelScope.launch {
-            try {
-                val result = authManager.reauthenticateWithEmailPassword(currentUser?.email ?: "", currentPassword)
-                if (result.isSuccess) {
-                    _profileState.value = ProfileState.Success(null) // Password verified successfully
-                } else {
-                    _profileState.value = ProfileState.Error("Password verification failed")
-                }
-            } catch (e: Exception) {
-                _profileState.value = ProfileState.Error("Failed to verify password: ${e.message}")
-            }
-        }
-    }
-
-    // Send password reset email
-    fun sendPasswordResetEmail(email: String) {
-        _profileState.value = ProfileState.Loading
-        viewModelScope.launch {
-            try {
-                authManager.sendPasswordResetEmail(email)
-                _profileState.value = ProfileState.Success(null) // Indicate success
-            } catch (e: Exception) {
-                _profileState.value = ProfileState.Error("Failed to send password reset email: ${e.message}")
-            }
-        }
-    }
-    // change password
+    // Change password
     fun changePassword(currentPassword: String, newPassword: String) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                // Use authManager to update the password
-                authManager.updatePassword(newPassword)
-                _profileState.value = ProfileState.Success(null) // Password updated successfully
+                profileManager.updatePassword(newPassword)
+                _profileState.value = ProfileState.Success(null)
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update password: ${e.message}")
             }
         }
     }
 
-}
+    fun reAuthenticateAndDeleteUser(
+        password: String?,
+        context: Context,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val user = FirebaseAuth.getInstance().currentUser
+        val credential =
+            if (user?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true) {
+                val googleSignInAccount = GoogleSignIn.getLastSignedInAccount(context)
+                val idToken = googleSignInAccount?.idToken
+                GoogleAuthProvider.getCredential(idToken, null)
+            } else {
+                // Handle email/password authentication
+                val email = user?.email ?: return
+                EmailAuthProvider.getCredential(email, password ?: "")
+            }
 
+        user?.reauthenticate(credential)?.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                user?.delete()?.addOnCompleteListener { deleteTask ->
+                    if (deleteTask.isSuccessful) {
+                        onSuccess()
+                    } else {
+                        onFailure("Failed to delete account")
+                    }
+                }
+            } else {
+                onFailure("Reauthentication failed")
+            }
+        }
+    }
+
+    fun reAuthenticateWithGoogle(
+        context: Context,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val user = FirebaseAuth.getInstance().currentUser
+
+        if (user != null) {
+            val googleSignInAccount = GoogleSignIn.getLastSignedInAccount(context)
+            val idToken = googleSignInAccount?.idToken
+
+            if (idToken != null) {
+                val googleCredential = GoogleAuthProvider.getCredential(idToken, null)
+
+                user.reauthenticate(googleCredential).addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        onSuccess()
+                    } else {
+                        onFailure("Re-authentication failed. Please sign in again.")
+                        Log.e(
+                            "ProfileViewModel",
+                            "Re-authentication failed: ${task.exception?.message}"
+                        )
+                    }
+                }
+            } else {
+                onFailure("Google Sign-In token is missing.")
+                Log.e("ProfileViewModel", "Google Sign-In token is missing.")
+            }
+        } else {
+            onFailure("No user is currently signed in.")
+            Log.e("ProfileViewModel", "No user is currently signed in.")
+        }
+    }
+
+    private fun reAuthenticateWithEmailPassword(
+        user: FirebaseUser,
+        password: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val credential = EmailAuthProvider.getCredential(user.email ?: "", password)
+
+        user.reauthenticate(credential).addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                // Proceed to delete user
+                user.delete().addOnCompleteListener { deleteTask ->
+                    if (deleteTask.isSuccessful) {
+                        onSuccess() // Success callback
+                    } else {
+                        onFailure("Failed to delete account")
+                    }
+                }
+            } else {
+                onFailure("Re-authentication failed. Please check your password.")
+                Log.e("ProfileViewModel", "Re-authentication failed: ${task.exception?.message}")
+            }
+        }
+    }
+}
 // UI States for Profile
 sealed class ProfileState {
     object Idle : ProfileState()

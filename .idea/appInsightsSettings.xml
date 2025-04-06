@@ -10,7 +10,7 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.cleansync" />
-                  <option name="mobileSdkAppId" value="1:87507478885:android:5f7b43ce8c4f0a6272998c" />
+                  <option name="mobileSdkAppId" value="1:87507478885:android:c63b2daf6b07fb5a72998c" />
                   <option name="projectId" value="cleansync-17b3c" />
                   <option name="projectNumber" value="87507478885" />
                 </ConnectionSetting>

@@ -2,6 +2,7 @@ package com.example.cleansync.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cleansync.data.repository.AuthManager
 import com.example.cleansync.data.repository.FirebaseAuthManager
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -13,7 +14,7 @@ import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 
 class AuthViewModel(
-    private val authManager: FirebaseAuthManager = FirebaseAuthManager()
+    private val authManager: AuthManager = AuthManager(),
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -48,7 +49,7 @@ class AuthViewModel(
     fun signIn(email: String, password: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val result = authManager.signIn(email, password)
+            val result = authManager.signInWithEmailAndPassword(email, password)
             _authState.value = result.fold(
                 onSuccess = { AuthState.Success(it) },
                 onFailure = {
@@ -110,18 +111,7 @@ class AuthViewModel(
         }
     }
 
-    // Change password
-    fun changePassword(currentPassword: String, newPassword: String) {
-        _authState.value = AuthState.Loading
-        viewModelScope.launch {
-            try {
-                authManager.updatePassword(newPassword)
-                _authState.value = AuthState.Success(null) // Password updated successfully
-            } catch (e: Exception) {
-                _authState.value = AuthState.Error("Failed to update password: ${e.message}")
-            }
-        }
-    }
+
 }
 
 // UI States for Authentication
