@@ -80,22 +80,20 @@ class AuthViewModel(
         authManager.signOut()
         _authState.value = AuthState.Idle
     }
-    fun sendPasswordResetEmail(email: String, password: String) {
+
+    // Send password reset email
+    fun sendPasswordResetEmail(email: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             try {
-                // Reauthenticate the user with email and password
-                val reauthenticationResult = authManager.reauthenticateWithEmailPassword(email, password)
-
-                if (reauthenticationResult.isSuccess) {
-                    // If reauthentication is successful, send password reset email
-                    authManager.sendPasswordResetEmail(email)
-                    _authState.value = AuthState.Success(null) // Password reset email sent
-                } else {
-                    _authState.value = AuthState.Error("Reauthentication failed. Please check your credentials.")
-                }
+                authManager.sendPasswordResetEmail(email)
+                _authState.value = AuthState.Success(null) // Indicate success
+            } catch (e: FirebaseAuthInvalidUserException) {
+                _authState.value = AuthState.Error("No account found with this email")
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                _authState.value = AuthState.Error("Invalid email format")
             } catch (e: Exception) {
-                _authState.value = AuthState.Error("An error occurred: ${e.message}")
+                _authState.value = AuthState.Error("Error sending password reset email: ${e.message}")
             }
         }
     }
@@ -112,12 +110,11 @@ class AuthViewModel(
         }
     }
 
-    // change password
+    // Change password
     fun changePassword(currentPassword: String, newPassword: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             try {
-                // Use authManager to update the password
                 authManager.updatePassword(newPassword)
                 _authState.value = AuthState.Success(null) // Password updated successfully
             } catch (e: Exception) {
