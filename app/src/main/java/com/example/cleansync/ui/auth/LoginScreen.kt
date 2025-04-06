@@ -1,6 +1,5 @@
 package com.example.cleansync.ui.auth
 
-import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
@@ -25,11 +24,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.R
 import com.example.cleansync.navigation.Screen
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount
-import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
-import com.google.firebase.auth.GoogleAuthProvider
 
 @Composable
 fun LoginScreen(
@@ -43,9 +39,8 @@ fun LoginScreen(
     var passwordError by remember { mutableStateOf<String?>(null) }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    // context for Google Sign-In
     val context = LocalContext.current
-    val server_Client_ID = stringResource(R.string.Server_Client_ID)
+    val serverClientId = stringResource(R.string.Server_Client_ID)
     val authState by authViewModel.authState.collectAsState()
 
     // Google Sign-In setup
@@ -53,13 +48,13 @@ fun LoginScreen(
         GoogleSignIn.getClient(
             context,
             GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(server_Client_ID) // Use your web client ID here
+                .requestIdToken(serverClientId)
                 .requestEmail()
                 .build()
         )
     }
 
-    // ActivityResultLauncher for handling sign-in result
+    // ActivityResultLauncher for handling Google Sign-In result
     val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
@@ -69,14 +64,11 @@ fun LoginScreen(
                 authViewModel.signInWithGoogle(it)
             }
         } catch (e: ApiException) {
-            // Handle sign-in error
+            // Handle error (optional: show message)
         }
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -220,9 +212,6 @@ fun LoginScreen(
 }
 
 
-
-
-
 @Preview(showBackground = true)
 @Composable
 fun PreviewLoginScreen() {
@@ -232,87 +221,5 @@ fun PreviewLoginScreen() {
         onLoginSuccess = {}
     )
 }
-
-
-@Composable
-fun PasswordResetScreen(
-    navController: NavController,
-    authViewModel: AuthViewModel = viewModel()
-) {
-    var email by remember { mutableStateOf("") }
-    var emailError by remember { mutableStateOf<String?>(null) }
-    val authState by authViewModel.authState.collectAsState()
-
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = "Reset Password", style = MaterialTheme.typography.headlineMedium)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Email Input Field
-            OutlinedTextField(
-                value = email,
-                onValueChange = {
-                    email = it
-                    emailError = null // Reset error on input change
-                },
-                label = { Text("Email") },
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
-                singleLine = true,
-                isError = emailError != null
-            )
-            emailError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Send Password Reset Button
-            Button(
-                onClick = {
-                    emailError = if (email.isBlank()) "Email cannot be empty" else null
-
-                    if (emailError == null) {
-                        authViewModel.sendPasswordResetEmail(email, "") // Pass an empty string for the password since it's not needed
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = authState !is AuthState.Loading
-            ) {
-                if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Text("Send Password Reset Email")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Handle Authentication States
-            when (authState) {
-                is AuthState.Error -> {
-                    val errorMessage = (authState as AuthState.Error).message
-                    Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                is AuthState.Success -> {
-                    Text(text = "Password reset email sent. Please check your inbox.", color = MaterialTheme.colorScheme.primary)
-                }
-                else -> {}
-            }
-        }
-    }
-}
-
 
 
