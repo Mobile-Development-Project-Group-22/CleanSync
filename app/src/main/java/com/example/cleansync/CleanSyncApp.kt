@@ -20,6 +20,7 @@ import com.example.cleansync.ui.auth.SignupScreen
 import com.example.cleansync.ui.booking.BookingScreen
 import com.example.cleansync.ui.booking.BookingViewModel
 import com.example.cleansync.ui.home.HomeScreen
+import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
 
@@ -85,9 +86,16 @@ fun CleanSyncApp() {
                         popUpTo(Screen.HomeScreen.route) { inclusive = true }
                     }
                 } else {
-                    HomeScreen(navController = navController, authViewModel = authViewModel)
+                    HomeScreen(
+                        navController = navController,
+                        authViewModel = authViewModel,
+                        notificationViewModel = NotificationViewModel(),
+                        profileViewModel = ProfileViewModel(),
+                    )
+
                 }
             }
+
 
             // Navigation for ProfileScreen
             composable(Screen.ProfileScreen.route) {

@@ -21,6 +21,7 @@ playServicesAuth = "21.3.0"
 retrofit = "2.9.0"
 firebaseCrashlyticsBuildtools = "3.0.3"
 storage = "1.5.0"
+identityJvm = "202411.1"
 
 [libraries]
 
@@ -59,6 +60,7 @@ play-services-auth = { module = "com.google.android.gms:play-services-auth", ver
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
 androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
+identity-jvm = { group = "com.android.identity", name = "identity-jvm", version.ref = "identityJvm" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
