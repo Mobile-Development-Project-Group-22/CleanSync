@@ -19,7 +19,8 @@ import com.example.cleansync.ui.auth.AuthState
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileViewModel
-import com.example.cleansync.ui.notifications.NotificationDialog
+
+//import com.example.cleansync.ui.notifications.NotificationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,16 +35,16 @@ fun HomeScreen(
     var showDialog by remember { mutableStateOf(false) }
     val notificationState by notificationViewModel.notificationState.collectAsState()
 
-    // Notification Dialog
-    if (showDialog) {
-        NotificationDialog(
-            onDismiss = { showDialog = false },
-            notificationState = notificationState,
-            onToggleRead = { notificationViewModel.toggleReadStatus(it) },
-            onRemove = { notificationViewModel.removeNotification(it) },
-            onClearAll = { notificationViewModel.clearAllNotifications() }
-        )
-    }
+//    // Notification Dialog
+//    if (showDialog) {
+//        NotificationDialog(
+//            onDismiss = { showDialog = false },
+//            notificationState = notificationState,
+//            onToggleRead = { notificationViewModel.toggleReadStatus(it) },
+//            onRemove = { notificationViewModel.removeNotification(it) },
+//            onClearAll = { notificationViewModel.clearAllNotifications() }
+//        )
+//    }
 
     LaunchedEffect(authState) {
         when (authState) {

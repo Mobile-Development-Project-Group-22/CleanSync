@@ -20,6 +20,7 @@ import com.example.cleansync.ui.auth.SignupScreen
 import com.example.cleansync.ui.booking.BookingScreen
 import com.example.cleansync.ui.booking.BookingViewModel
 import com.example.cleansync.ui.home.HomeScreen
+import com.example.cleansync.ui.notifications.NotificationScreen
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
@@ -49,7 +50,6 @@ fun CleanSyncApp() {
             // Navigation for login screen
             composable(Screen.LoginScreen.route) {
                 if (isLoggedIn) {
-                    // Redirect to HomeScreen if already logged in
                     navController.navigate(Screen.HomeScreen.route) {
                         popUpTo(Screen.LoginScreen.route) { inclusive = true }
                     }
@@ -69,7 +69,6 @@ fun CleanSyncApp() {
             // Navigation for signup screen
             composable(Screen.SignupScreen.route) {
                 if (isLoggedIn) {
-                    // Redirect to HomeScreen if already logged in
                     navController.navigate(Screen.HomeScreen.route) {
                         popUpTo(Screen.SignupScreen.route) { inclusive = true }
                     }
@@ -81,7 +80,6 @@ fun CleanSyncApp() {
             // Navigation for HomeScreen (logged-in user only)
             composable(Screen.HomeScreen.route) {
                 if (!isLoggedIn) {
-                    // Redirect to LoginScreen if not logged in
                     navController.navigate(Screen.LoginScreen.route) {
                         popUpTo(Screen.HomeScreen.route) { inclusive = true }
                     }
@@ -92,15 +90,26 @@ fun CleanSyncApp() {
                         notificationViewModel = NotificationViewModel(),
                         profileViewModel = ProfileViewModel(),
                     )
-
                 }
             }
 
+            // Navigation for Notifications Screen (New addition)
+            composable(Screen.NotificationScreen.route) {
+                if (!isLoggedIn) {
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(Screen.NotificationScreen.route) { inclusive = true }
+                    }
+                } else {
+                    NotificationScreen(
+                        navController = navController,
+                        notificationViewModel = NotificationViewModel()
+                    )
+                }
+            }
 
             // Navigation for ProfileScreen
             composable(Screen.ProfileScreen.route) {
                 if (!isLoggedIn) {
-                    // Redirect to LoginScreen if not logged in
                     navController.navigate(Screen.LoginScreen.route) {
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
@@ -112,7 +121,6 @@ fun CleanSyncApp() {
             // Navigation for BookingScreen
             composable(Screen.BookingScreen.route) {
                 if (!isLoggedIn) {
-                    // Redirect to LoginScreen if not logged in
                     navController.navigate(Screen.LoginScreen.route) {
                         popUpTo(Screen.BookingScreen.route) { inclusive = true }
                     }
@@ -120,11 +128,9 @@ fun CleanSyncApp() {
                     BookingScreen(
                         bookingViewModel = BookingViewModel(),
                         onBookingConfirmed = {
-                            // Handle booking confirmation
                             navController.navigate(Screen.BookingConfirmationScreen.route)
                         },
                         onBookingCancelled = {
-                            // Handle booking cancellation
                             navController.navigate(Screen.HomeScreen.route)
                         }
                     )
@@ -134,7 +140,6 @@ fun CleanSyncApp() {
             // Navigation for PasswordResetScreen
             composable(Screen.PasswordResetScreen.route) {
                 if (isLoggedIn) {
-                    // Redirect to HomeScreen if already logged in
                     navController.navigate(Screen.HomeScreen.route) {
                         popUpTo(Screen.PasswordResetScreen.route) { inclusive = true }
                     }

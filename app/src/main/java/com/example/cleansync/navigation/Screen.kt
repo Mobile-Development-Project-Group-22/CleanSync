@@ -10,4 +10,5 @@ sealed class Screen(val route: String) {
     object PasswordResetScreen : Screen("password_reset_screen")
     object ChangePasswordScreen : Screen("change_password_screen")
     object BookingConfirmationScreen : Screen("booking_confirmation_screen")
+    object NotificationScreen : Screen("notification_screen")
 }
