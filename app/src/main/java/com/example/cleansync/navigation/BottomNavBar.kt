@@ -2,6 +2,7 @@ package com.example.cleansync.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -18,6 +19,7 @@ fun BottomNavBar(navController: NavController) {
     val items = listOf(
         NavigationItem("Home", Icons.Default.Home, "home_screen"),
         NavigationItem("Booking", Icons.Default.Home, "booking_screen"),
+        NavigationItem("Notifications", Icons.Default.Notifications, "notification_screen"),
         NavigationItem("Profile", Icons.Default.Person, "profile_screen")
     )
 

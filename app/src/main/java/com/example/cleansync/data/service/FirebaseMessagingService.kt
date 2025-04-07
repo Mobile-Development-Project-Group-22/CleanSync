@@ -22,9 +22,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val title = remoteMessage.notification?.title ?: "New Notification"
-        val message = remoteMessage.notification?.body ?: "You have a new message"
-
+        val title =
+            remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "New Notification"
+        val message = remoteMessage.notification?.body ?: remoteMessage.data["message"]
+        ?: "You have a new message"
         // Log the message
         Log.d("MyFirebaseService", "Message received: Title=$title, Message=$message")
 
@@ -64,7 +65,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val channelId = "cleansync_notifications"
 
         // Generate a unique notification ID using UUID
-        val notificationId = UUID.randomUUID().toString().hashCode()
+        val notificationId = UUID.randomUUID().toString()
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -93,7 +94,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        notificationManager.notify(notificationId, notificationBuilder.build())
+        notificationManager.notify(
+            notificationId.hashCode(), // Use hashCode of UUID for unique ID
+            notificationBuilder.build()
+        )
     }
 
     private fun saveNotificationToFirestore(title: String, message: String) {
