@@ -1,14 +1,20 @@
+// BookingScreen.kt
+
 package com.example.cleansync.ui.booking
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.Context
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.example.cleansync.navigation.Screen
+import java.time.LocalDateTime
+import java.util.*
 
 @Composable
 fun BookingScreen(
@@ -16,93 +22,97 @@ fun BookingScreen(
     onBookingConfirmed: () -> Unit,
     onBookingCancelled: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            BookingTopAppBar() // TopAppBar with text button
-        },
-        content = { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Booking screen content goes here (can be dynamic content based on bookingState)
+    val context = LocalContext.current
 
-                // Text or Booking Details (Example Placeholder)
-                Text(
-                    text = "Booking Details: [Add your booking details here]",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontSize = 18.sp
-                )
+    Column(modifier = Modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
 
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Action buttons for Confirm and Cancel booking
-                BookingActionButtons(
-                    onBookingConfirmed = onBookingConfirmed,
-                    onBookingCancelled = onBookingCancelled
-                )
-            }
-        }
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun BookingTopAppBar() {
-    SmallTopAppBar(
-        title = { Text("Booking") },
-        actions = {
-            // You can add more actions here if necessary (e.g. additional buttons)
-            TextButton(
-                onClick = {
-                    // This button could be used for actions like "Help", "Settings", etc.
-                }
-            ) {
-                Text(
-                    text = "Action",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        },
-        colors = TopAppBarDefaults.smallTopAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            titleContentColor = MaterialTheme.colorScheme.onPrimary
-        )
-    )
-}
-
-@Composable
-fun BookingActionButtons(
-    onBookingConfirmed: () -> Unit,
-    onBookingCancelled: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Button(
-            onClick = {
-                onBookingConfirmed() // This will trigger the confirmation logic
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Confirm Booking")
+        // Step 1: Show Calculate Price Button
+        Button(onClick = { bookingViewModel.toggleInputFields() }) {
+            Text("Calculate Price")
         }
 
-        OutlinedButton(
-            onClick = {
-                onBookingCancelled() // This will trigger the cancel logic
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Cancel Booking")
+        // Step 2: Show Length & Width inputs if toggle is true
+        if (bookingViewModel.showInputFields) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = bookingViewModel.length,
+                onValueChange = { bookingViewModel.length = it },
+                label = { Text("Carpet Length (m)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = bookingViewModel.width,
+                onValueChange = { bookingViewModel.width = it },
+                label = { Text("Carpet Width (m)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Step 3: Calculate Now Button
+            Button(onClick = { bookingViewModel.calculatePrice() }) {
+                Text("Calculate Now")
+            }
+        }
+
+        // Step 4: Show Calculated Price
+        bookingViewModel.estimatedPrice?.let { price ->
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Estimated Price: €$price")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Step 5: Show Date & Time Picker
+            Button(onClick = {
+                showDateTimePicker(context, bookingViewModel)
+            }) {
+                Text("Select Date & Time")
+            }
+        }
+
+        // Step 6: Show selected date & time summary
+        bookingViewModel.selectedDateTime?.let {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Selected: ${bookingViewModel.formattedDateTime}")
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = {
+                // Next step: location form and save to Firestore
+                onBookingConfirmed()
+            }) {
+                Text("Continue to Booking Form")
+            }
         }
     }
 }
 
+fun showDateTimePicker(context: Context, viewModel: BookingViewModel) {
+    val calendar = Calendar.getInstance()
 
+    DatePickerDialog(
+        context,
+        { _, year, month, day ->
+            TimePickerDialog(
+                context,
+                { _, hour, minute ->
+                    viewModel.selectedDateTime = LocalDateTime.of(year, month + 1, day, hour, minute)
+                },
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                true
+            ).show()
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).show()
+}
