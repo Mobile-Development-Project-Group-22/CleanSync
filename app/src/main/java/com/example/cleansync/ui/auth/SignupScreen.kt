@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.navigation.Screen
+import com.example.cleansync.ui.auth.AuthViewModel.AuthState
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,16 +60,12 @@ fun SignupScreen(
 
     LaunchedEffect(authState) {
         when (authState) {
-            is AuthState.Success -> {
+            is AuthState.SignupSuccess -> {
                 // Only show dialog after successful signup
                 showVerificationDialog = true
+                authViewModel.currentUser?.sendEmailVerification()
                 isSignupEnabled = true
                 // Send verification email if not already sent
-                showVerificationDialog = true
-                if (authViewModel.currentUser?.isEmailVerified == false) {
-                    authViewModel.currentUser?.sendEmailVerification()
-
-                }
                 }
 
             is AuthState.Error -> {
