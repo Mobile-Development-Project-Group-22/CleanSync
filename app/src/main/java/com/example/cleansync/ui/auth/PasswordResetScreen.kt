@@ -12,11 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.cleansync.utils.NotificationUtils
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -29,7 +31,7 @@ fun PasswordResetScreen(
     var emailError by remember { mutableStateOf<String?>(null) }
     val authState by authViewModel.authState.collectAsState()
     var isSuccess by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     LaunchedEffect(authState) {
         if (authState is AuthState.Success) {
             isSuccess = true
@@ -111,6 +113,11 @@ fun PasswordResetScreen(
                         emailError = if (email.isBlank()) "Please enter a valid email address" else null
                         if (emailError == null) {
                             authViewModel.sendPasswordResetEmail(email)
+                            NotificationUtils.sendCustomNotification(
+                                context = context,
+                                title = "Password Reset",
+                                message = "A password reset link has been sent to $email"
+                            )
                         }
                     },
                     enabled = authState !is AuthState.Loading,
