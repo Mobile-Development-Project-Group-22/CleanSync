@@ -25,7 +25,17 @@ import com.example.cleansync.ui.profile.ProfileViewModel
 fun CleanSyncApp() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
-    val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
+    val notificationViewModel: NotificationViewModel = viewModel()
+    val profileViewModel: ProfileViewModel = viewModel()
+    val bookingViewModel: BookingViewModel = viewModel()
+
+    val isLoggedIn = authViewModel.authState.collectAsState().value.let { state ->
+        when (state) {
+            is AuthViewModel.AuthState.LoginSuccess -> true
+            is AuthViewModel.AuthState.SignupSuccess -> true
+            else -> false
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),

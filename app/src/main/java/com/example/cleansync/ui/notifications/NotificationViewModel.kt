@@ -144,6 +144,10 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
+    fun unreadNotificationsCount(): Int {
+        return _notificationState.value.count { !it.isRead }
+    }
+
 
 }
 

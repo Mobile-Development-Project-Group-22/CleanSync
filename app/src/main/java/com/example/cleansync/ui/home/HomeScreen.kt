@@ -3,6 +3,7 @@ package com.example.cleansync.ui.home
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,12 +16,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.cleansync.data.model.NotificationState
 import com.example.cleansync.navigation.Screen
-import com.example.cleansync.ui.auth.AuthState
+
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileViewModel
-
-//import com.example.cleansync.ui.notifications.NotificationDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,151 +31,147 @@ fun HomeScreen(
 ) {
     val authState by authViewModel.authState.collectAsState()
     val currentUser = profileViewModel.currentUser
-    var showDialog by remember { mutableStateOf(false) }
+
+    // Observe the notification state
     val notificationState by notificationViewModel.notificationState.collectAsState()
-
-//    // Notification Dialog
-//    if (showDialog) {
-//        NotificationDialog(
-//            onDismiss = { showDialog = false },
-//            notificationState = notificationState,
-//            onToggleRead = { notificationViewModel.toggleReadStatus(it) },
-//            onRemove = { notificationViewModel.removeNotification(it) },
-//            onClearAll = { notificationViewModel.clearAllNotifications() }
-//        )
-//    }
-
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Success -> {
-                if (navController.currentBackStackEntry?.destination?.route == Screen.LoginScreen.route) {
-                    navController.popBackStack() // Return to home if already logged in
-                }
-            }
-            is AuthState.Error -> {
-                // Handle error state (e.g., show a Snackbar with the error message)
-            }
-            is AuthState.Loading -> {
-                // Show loading indicator
-            }
-            else -> {
-                navController.navigate(Screen.LoginScreen.route) {
-                    popUpTo(Screen.HomeScreen.route) { inclusive = true }
-                    launchSingleTop = true
-                }
-            }
-        }
-    }
+    val unreadCount = notificationState.count { !it.isRead }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "CleanSync",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { showDialog = true }) {
-                        Icon(Icons.Filled.Notifications, contentDescription = "Notifications")
-                    }
-                },
-                colors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+            HomeAppBar(
+                userName = currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User",
+                unreadCount = unreadCount,
+                onNotificationClick = { navController.navigate(Screen.NotificationScreen.route) },
+                onProfileClick = { navController.navigate(Screen.ProfileScreen.route) }
             )
         },
         content = { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Welcome message
-                Text(
-                    text = "Welcome ${currentUser?.displayName ?: "Guest"}!",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    modifier = Modifier.padding(16.dp),
-                    textAlign = TextAlign.Center
-                )
+            HomeContent(
+                modifier = Modifier.padding(innerPadding),
+                onBookingClick = { navController.navigate(Screen.BookingScreen.route) },
+                onLogoutClick = {
+                    authViewModel.signOut()
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(Screen.HomeScreen.route) { inclusive = true }
+                    }
+                },
+                onTestNotification = { sendTestNotification(notificationViewModel) }
+            )
+        }
+    )
+}
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Button to trigger test notification
-                Button(
-                    onClick = { sendTestNotification(notificationViewModel) },
-                    modifier = Modifier
-                        .padding(horizontal = 32.dp)
-                        .height(56.dp)
-                ) {
-                    Text(
-                        text = "Send Test Notification",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Go to Booking Screen
-                Button(
-                    onClick = { navController.navigate(Screen.BookingScreen.route) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Text("Go to Booking", style = MaterialTheme.typography.labelLarge)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Logout Button
-                OutlinedButton(
-                    onClick = {
-                        authViewModel.signOut()
-                        navController.navigate(Screen.LoginScreen.route) {
-                            popUpTo(Screen.HomeScreen.route) { inclusive = true }
-                            launchSingleTop = true
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeAppBar(
+    userName: String,
+    unreadCount: Int,
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = "Hi, $userName",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        actions = {
+            // Notification icon with badge
+            BadgedBox(
+                badge = {
+                    if (unreadCount > 0) {
+                        Badge {
+                            Text(unreadCount.toString())
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp)
-                        .height(56.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Logout", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
+                    }
                 }
+            ) {
+                IconButton(onClick = onNotificationClick) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Notifications"
+                    )
+                }
+            }
+
+            // Profile icon
+            IconButton(onClick = onProfileClick) {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = "Profile"
+                )
             }
         }
     )
 }
 
-fun sendTestNotification(viewModel: NotificationViewModel) {
-    val title = "Test Notification"
-    val message = "This is a test notification sent from the button click."
+@Composable
+private fun HomeContent(
+    modifier: Modifier = Modifier,
+    onBookingClick: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onTestNotification: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Primary action button
+        FilledTonalButton(
+            onClick = onBookingClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = MaterialTheme.shapes.large
+        ) {
+            Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
+        }
+
+        // Secondary action button
+        OutlinedButton(
+            onClick = onTestNotification,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = MaterialTheme.shapes.large
+        ) {
+            Text("Test Notification", style = MaterialTheme.typography.labelLarge)
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Logout button
+        TextButton(
+            onClick = onLogoutClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Logout",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelLarge
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+private fun sendTestNotification(viewModel: NotificationViewModel) {
     viewModel.addNotification(
         NotificationState(
-            title = title,
-            message = message,
+            title = "Test Notification",
+            message = "This is a test notification",
             isRead = false
         )
     )

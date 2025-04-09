@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -30,6 +31,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.R
 import com.example.cleansync.navigation.Screen
+import com.example.cleansync.ui.auth.AuthViewModel.AuthState
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
@@ -50,6 +52,53 @@ fun LoginScreen(
     val serverClientId = stringResource(R.string.Server_Client_ID)
     val authState by authViewModel.authState.collectAsState()
     val scrollState = rememberScrollState()
+
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.Error -> {
+                errorMessage = (authState as AuthState.Error).message
+                showErrorDialog = true
+            }
+            is AuthState.SignupSuccess -> {
+                onLoginSuccess()
+            }
+            else -> {}
+        }
+    }
+
+    // Error Dialog
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = "Error",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text("Login Failed")
+            },
+            text = {
+                Text(errorMessage)
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showErrorDialog = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text("OK")
+                }
+            },
+            shape = MaterialTheme.shapes.large
+        )
+    }
 
     // Google Sign-In setup
     val googleSignInClient = remember {
@@ -301,23 +350,7 @@ fun LoginScreen(
                 }
             }
 
-            // Handle authentication states
-            when (authState) {
-                is AuthState.Error -> {
-                    val error = (authState as AuthState.Error).message
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 16.dp)
-                    )
-                }
-                is AuthState.Success -> {
-                    LaunchedEffect(Unit) {
-                        onLoginSuccess()
-                    }
-                }
-                else -> {}
-            }
+
         }
     }
 }

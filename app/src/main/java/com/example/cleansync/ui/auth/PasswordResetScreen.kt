@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cleansync.navigation.Screen
+import com.example.cleansync.ui.auth.AuthViewModel.AuthState
 import com.example.cleansync.utils.NotificationUtils
 import kotlinx.coroutines.delay
 
@@ -46,7 +47,7 @@ fun PasswordResetScreen(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.Success) {
+        if (authState is AuthState.PasswordResetSent) {
             showSuccessDialog = true
             focusManager.clearFocus()
             NotificationUtils.sendCustomNotification(
