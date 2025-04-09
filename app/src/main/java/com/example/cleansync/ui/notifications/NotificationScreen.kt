@@ -32,6 +32,8 @@ import com.example.cleansync.data.model.NotificationState
 import com.google.firebase.Timestamp
 import androidx.compose.animation.fadeOut as fadeOut1
 
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationScreen(
@@ -68,30 +70,45 @@ fun NotificationScreen(
             )
         },
         content = { paddingValues ->
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .padding(paddingValues)
                     .fillMaxSize()
             ) {
-                items(
-                    items = notificationState,
-                    key = { it.id } // Add unique ID for each notification
-                ) { notification ->
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + expandVertically(),
-                        exit = shrinkVertically() + fadeOut1()
-                    ) {
-                        NotificationItem(
-                            notification = notification,
-                            onToggleReadStatus = { notificationViewModel.toggleReadStatus(it) },
-                            onRemoveNotification = { notificationViewModel.removeNotification(it) }
-                        )
-                        Divider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            thickness = 0.8.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                        )
+                // Clear All Notifications Button
+                Button(
+                    onClick = { notificationViewModel.clearAllNotifications() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Clear All Notifications")
+                }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(
+                        items = notificationState,
+                        key = { it.id } // Add unique ID for each notification
+                    ) { notification ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn() + expandVertically(),
+                            exit = shrinkVertically() + fadeOut1()
+                        ) {
+                            NotificationItem(
+                                notification = notification,
+                                onToggleReadStatus = { notificationViewModel.toggleReadStatus(it) },
+                                onRemoveNotification = { notificationViewModel.removeNotification(it) }
+                            )
+                            Divider(
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                thickness = 0.8.dp,
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                            )
+                        }
                     }
                 }
             }
@@ -188,14 +205,15 @@ fun NotificationItem(
     }
 }
 
-// Helper function to format timestamp
+
 fun formatTimeAgo(timestamp: Timestamp): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp.toDate().time
+    val currentTime = Timestamp.now()
+    val timeDifference = currentTime.seconds - timestamp.seconds
+
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3_600_000 -> "${diff / 60_000} min ago"
-        diff < 86_400_000 -> "${diff / 3_600_000} h ago"
-        else -> "${diff / 86_400_000} d ago"
+        timeDifference < 60 -> "${timeDifference}s ago"
+        timeDifference < 3600 -> "${timeDifference / 60}m ago"
+        timeDifference < 86400 -> "${timeDifference / 3600}h ago"
+        else -> "${timeDifference / 86400}d ago"
     }
 }
