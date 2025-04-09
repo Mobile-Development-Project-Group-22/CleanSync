@@ -20,18 +20,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.data.model.NotificationState
 import com.google.firebase.Timestamp
 import androidx.compose.animation.fadeOut as fadeOut1
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,6 +45,7 @@ fun NotificationScreen(
 ) {
     val notificationState by notificationViewModel.notificationState.collectAsState()
     val errorMessage by notificationViewModel.errorMessage.collectAsState()
+    val isNotificationsEmpty = notificationState.isEmpty()
 
     if (errorMessage != null) {
         Snackbar(
@@ -75,15 +79,35 @@ fun NotificationScreen(
                     .padding(paddingValues)
                     .fillMaxSize()
             ) {
-                // Clear All Notifications Button
-                Button(
-                    onClick = { notificationViewModel.clearAllNotifications() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Clear All Notifications")
+                if (!isNotificationsEmpty) {
+                    // Clear All Notifications Button with improved design
+                    Button(
+                        onClick = { notificationViewModel.clearAllNotifications() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(
+                            "Clear All Notifications",
+                            style = MaterialTheme.typography.bodyLarge.copy(color = Color.White)
+                        )
+                    }
+                } else {
+                    // Placeholder for empty state with smooth transition
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "No new notifications",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        )
+                    }
                 }
 
                 LazyColumn(
@@ -103,9 +127,9 @@ fun NotificationScreen(
                                 onToggleReadStatus = { notificationViewModel.toggleReadStatus(it) },
                                 onRemoveNotification = { notificationViewModel.removeNotification(it) }
                             )
-                            Divider(
+                            HorizontalDivider(
                                 modifier = Modifier.padding(horizontal = 16.dp),
-                                thickness = 0.8.dp,
+                                thickness = 1.dp,
                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                             )
                         }
@@ -136,12 +160,9 @@ fun NotificationItem(
             .fillMaxWidth()
             .clickable { onToggleReadStatus(notification) }
             .padding(vertical = 8.dp, horizontal = 16.dp)
-            .hoverable(
-                interactionSource = remember { MutableInteractionSource() },
-
-                ),
-        tonalElevation = if (isHovered) 2.dp else if (notification.isRead) 0.dp else 1.dp,
-        shape = RoundedCornerShape(12.dp),
+            .hoverable(interactionSource = remember { MutableInteractionSource() }),
+        tonalElevation = if (isHovered) 4.dp else 1.dp,
+        shape = RoundedCornerShape(16.dp),
         color = if (isHovered) MaterialTheme.colorScheme.surfaceContainerHigh
         else MaterialTheme.colorScheme.surface
     ) {
@@ -168,16 +189,16 @@ fun NotificationItem(
                 ) {
                     Text(
                         notification.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.SemiBold,
-                        color = if (notification.isRead) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = if (notification.isRead) FontWeight.Normal else FontWeight.Bold,
+                            color = if (notification.isRead) MaterialTheme.colorScheme.onSurfaceVariant
+                            else MaterialTheme.colorScheme.onSurface
+                        )
                     )
 
                     Text(
                         text = formatTimeAgo(notification.timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline,
+                        style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.outline),
                         modifier = Modifier.padding(start = 8.dp)
                     )
                 }
@@ -186,25 +207,23 @@ fun NotificationItem(
 
                 Text(
                     notification.message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                 )
             }
 
             IconButton(
                 onClick = { onRemoveNotification(notification) },
-                modifier = Modifier.size(24.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Dismiss",
-                    tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
         }
     }
 }
-
 
 fun formatTimeAgo(timestamp: Timestamp): String {
     val currentTime = Timestamp.now()
@@ -216,4 +235,15 @@ fun formatTimeAgo(timestamp: Timestamp): String {
         timeDifference < 86400 -> "${timeDifference / 3600}h ago"
         else -> "${timeDifference / 86400}d ago"
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NotificationScreenPreview() {
+    val navController = rememberNavController()
+    val notificationViewModel: NotificationViewModel = viewModel()
+    NotificationScreen(
+        navController = navController,
+        notificationViewModel = notificationViewModel
+    )
 }
