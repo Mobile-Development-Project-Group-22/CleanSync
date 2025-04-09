@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.cleansync.ui.theme.CleanSyncTheme
 
 // MainActivity
 class MainActivity : ComponentActivity() {
@@ -13,7 +14,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            CleanSyncApp()
+            CleanSyncTheme {
+                // A surface container using the 'background' color from the theme
+                CleanSyncApp()
+            }
+
         }
     }
 }

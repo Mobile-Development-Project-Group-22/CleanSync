@@ -2,9 +2,13 @@ package com.example.cleansync.ui.auth
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -12,7 +16,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -42,6 +49,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val serverClientId = stringResource(R.string.Server_Client_ID)
     val authState by authViewModel.authState.collectAsState()
+    val scrollState = rememberScrollState()
 
     // Google Sign-In setup
     val googleSignInClient = remember {
@@ -54,82 +62,145 @@ fun LoginScreen(
         )
     }
 
-    // ActivityResultLauncher for handling Google Sign-In result
-    val googleSignInLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
         try {
-            val account = task.getResult(ApiException::class.java)
-            val idToken = account?.idToken
-            idToken?.let {
-                authViewModel.signInWithGoogle(it)
-            }
+            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                .getResult(ApiException::class.java)
+            account?.idToken?.let { authViewModel.signInWithGoogle(it) }
         } catch (e: ApiException) {
-            // Handle error (optional: show message)
+            // Handle error
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(text = "Login", style = MaterialTheme.typography.headlineMedium)
+            // App Logo/Header
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "App Logo",
+                modifier = Modifier.size(120.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Email Input Field
+            // Welcome Text
+            Text(
+                text = "Welcome Back",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            )
+
+            Text(
+                text = "Login to continue",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            // Email Field
             OutlinedTextField(
                 value = email,
                 onValueChange = {
                     email = it
-                    emailError = null // Reset error on input change
+                    emailError = null
                 },
-                label = { Text("Email") },
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+                label = { Text("Email Address") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
                 singleLine = true,
-                isError = emailError != null
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                isError = emailError != null,
+                supportingText = { emailError?.let { Text(it) } }
             )
-            emailError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Password Input Field
+            // Password Field
             OutlinedTextField(
                 value = password,
                 onValueChange = {
                     password = it
-                    passwordError = null // Reset error on input change
+                    passwordError = null
                 },
                 label = { Text("Password") },
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                visualTransformation = if (passwordVisible) VisualTransformation.None
+                else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
-                            imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = "Toggle Password Visibility"
+                            imageVector = if (passwordVisible) Icons.Default.Visibility
+                            else Icons.Default.VisibilityOff,
+                            contentDescription = "Toggle password visibility",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                     }
                 },
-                isError = passwordError != null
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                isError = passwordError != null,
+                supportingText = { passwordError?.let { Text(it) } }
             )
-            passwordError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Forgot Password
+            TextButton(
+                onClick = { navController.navigate(Screen.PasswordResetScreen.route) },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    "Forgot Password?",
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Login Button
             Button(
                 onClick = {
-                    // Field validation before login
-                    emailError = if (email.isBlank()) "Email cannot be empty" else null
-                    passwordError = if (password.isBlank()) "Password cannot be empty" else null
-
-                    if (emailError == null && passwordError == null) {
-                        authViewModel.signIn(email, password)
+                    when {
+                        email.isBlank() -> emailError = "Email is required"
+                        !email.isValidEmail() -> emailError = "Invalid email format"
+                        password.isBlank() -> passwordError = "Password is required"
+                        else -> authViewModel.signIn(email, password)
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large,
                 enabled = authState !is AuthState.Loading
             ) {
                 if (authState is AuthState.Loading) {
@@ -139,66 +210,106 @@ fun LoginScreen(
                         modifier = Modifier.size(24.dp)
                     )
                 } else {
-                    Text("Login")
+                    Text(
+                        "Login",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Google Sign-In Button
-            Button(
-                onClick = {
-                    val signInIntent = googleSignInClient.signInIntent
-                    googleSignInLauncher.launch(signInIntent)
-                },
+            // Divider
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Sign in with Google")
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                )
+                Text(
+                    "OR",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Divider(
+                    modifier = Modifier.weight(1f),
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Forgot Password Link
-            TextButton(
+            // Google Sign-In Button
+            OutlinedButton(
                 onClick = {
-                    navController.navigate(Screen.PasswordResetScreen.route)
-                }
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large,
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
             ) {
-                Text("Forgot your password?")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google_logo),
+                        contentDescription = "Google Logo",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        "Continue with Google",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // Sign Up Navigation
-            TextButton(
-                onClick = {
-                    navController.navigate(Screen.SignupScreen.route) {
-                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                    }
-                }
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Don't have an account? Sign Up")
+                Text(
+                    "Don't have an account?",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                TextButton(
+                    onClick = {
+                        navController.navigate(Screen.SignupScreen.route) {
+                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                        }
+                    }
+                ) {
+                    Text(
+                        "Sign Up",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Handle Authentication States
+            // Handle authentication states
             when (authState) {
-                is AuthState.Loading -> {} // Show loading indicator inside the button
                 is AuthState.Error -> {
-                    val errorMessage = (authState as AuthState.Error).message
+                    val error = (authState as AuthState.Error).message
                     Text(
-                        text = errorMessage,
-                        color = MaterialTheme.colorScheme.error
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 16.dp)
                     )
-
-                    // Specific error handling for wrong password or email not found
-                    if (errorMessage.contains("user not found", ignoreCase = true)) {
-                        emailError = "No account found with this email"
-                    }
-                    if (errorMessage.contains("wrong password", ignoreCase = true)) {
-                        passwordError = "Incorrect password"
-                    }
                 }
                 is AuthState.Success -> {
                     LaunchedEffect(Unit) {
@@ -211,6 +322,11 @@ fun LoginScreen(
     }
 }
 
+// Email validation extension
+fun String.isValidEmail(): Boolean {
+    val emailRegex = Regex("^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})")
+    return emailRegex.matches(this)
+}
 
 @Preview(showBackground = true)
 @Composable
