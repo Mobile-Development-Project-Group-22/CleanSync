@@ -100,6 +100,17 @@ dependencies {
     implementation("androidx.credentials:credentials:1.3.0")
     implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    // Google Play Services Location (for GPS)
+    // Google Play Services Location (for GPS)
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+// Accompanist permissions for Compose
+    implementation("com.google.accompanist:accompanist-permissions:0.31.6-rc")
+
+// JSON (if needed for manual parsing, optional with Retrofit + Gson)
+    implementation("org.json:json:20210307")
+
+
 
 
     // Testing

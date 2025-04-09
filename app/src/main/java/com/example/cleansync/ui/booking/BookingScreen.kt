@@ -1,5 +1,3 @@
-// BookingScreen.kt
-
 package com.example.cleansync.ui.booking
 
 import android.app.DatePickerDialog
@@ -24,10 +22,11 @@ fun BookingScreen(
 ) {
     val context = LocalContext.current
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
-
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         // Step 1: Show Calculate Price Button
         Button(onClick = { bookingViewModel.toggleInputFields() }) {
             Text("Calculate Price")
@@ -86,7 +85,7 @@ fun BookingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(onClick = {
-                // Next step: location form and save to Firestore
+                // ✅ Navigate to Booking Form (not confirmation directly)
                 onBookingConfirmed()
             }) {
                 Text("Continue to Booking Form")
