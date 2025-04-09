@@ -27,6 +27,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel.AuthState
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import kotlinx.coroutines.delay
 
 @Composable
@@ -58,21 +60,50 @@ fun SignupScreen(
         }
     }
 
+    if (showVerificationDialog) {
+        EmailVerificationDialog(
+            email = email,
+            onDismiss = { showVerificationDialog = false },
+            onNavigateToLogin = {
+                showVerificationDialog = false
+                navController.navigate(Screen.LoginScreen.route) {
+                    popUpTo(Screen.SignupScreen.route) { inclusive = true }
+                }
+            },
+            autoNavigateAfterSeconds = 10
+        )
+    }
+
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.SignupSuccess -> {
-                // Only show dialog after successful signup
-                showVerificationDialog = true
-                authViewModel.currentUser?.sendEmailVerification()
                 isSignupEnabled = true
-                // Send verification email if not already sent
+                authViewModel.currentUser?.let { user ->
+                    if (!user.isEmailVerified) {
+                        try {
+                            user.sendEmailVerification()
+                            showVerificationDialog = true
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                context,
+                                "Failed to send verification email",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            // Still navigate to login even if email fails
+                            navController.navigate(Screen.LoginScreen.route) {
+                                popUpTo(Screen.SignupScreen.route) { inclusive = true }
+                            }
+                        }
+                    } else {
+                        // If somehow already verified, go to login
+                        navController.navigate(Screen.LoginScreen.route) {
+                            popUpTo(Screen.SignupScreen.route) { inclusive = true }
+                        }
+                    }
                 }
-
-            is AuthState.Error -> {
-                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_SHORT).show()
-                isSignupEnabled = true
             }
-            else -> Unit
+            else -> Unit // Handle other states if necessary
+            // ... rest of the cases ...
         }
     }
 
@@ -287,9 +318,6 @@ fun SignupScreen(
             onDismiss = { showVerificationDialog = false },
             onNavigateToLogin = {
                 showVerificationDialog = false
-                navController.navigate(Screen.LoginScreen.route) {
-                    popUpTo(Screen.SignupScreen.route) { inclusive = true }
-                }
             },
             autoNavigateAfterSeconds = 10
         )
@@ -303,9 +331,8 @@ fun EmailVerificationDialog(
     onNavigateToLogin: () -> Unit,
     autoNavigateAfterSeconds: Int = 10
 ) {
-
     var countdown by remember { mutableStateOf(autoNavigateAfterSeconds) }
-    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         while (countdown > 0) {
             delay(1000L)
@@ -315,18 +342,17 @@ fun EmailVerificationDialog(
             onNavigateToLogin()
         }
     }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                "Account Created Successfully!",
+                "Verify Your Email",
                 style = MaterialTheme.typography.headlineSmall
             )
         },
         text = {
             Column {
-                Text("Thank you for signing up!")
-                Spacer(modifier = Modifier.height(8.dp))
                 Text("We've sent a verification email to:")
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -336,24 +362,22 @@ fun EmailVerificationDialog(
                     )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Please verify your email before logging in.")
+                Text("Please check your inbox and verify your email before logging in.")
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "You'll be redirected to login in $countdown seconds",
+                    "Redirecting to login in $countdown seconds...",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
         },
         confirmButton = {
-            Button(
-                onClick = onNavigateToLogin,
-                modifier = Modifier.width(150.dp)
+            TextButton(
+                onClick = onNavigateToLogin
             ) {
-                Text("Got it (${countdown}s)")
+                Text("Go to Login Now")
             }
         },
         shape = MaterialTheme.shapes.large
     )
 }
-

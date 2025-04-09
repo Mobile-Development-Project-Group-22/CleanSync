@@ -30,11 +30,72 @@ fun HomeScreen(
     profileViewModel: ProfileViewModel
 ) {
     val authState by authViewModel.authState.collectAsState()
-    val currentUser = profileViewModel.currentUser
+    val currentUser = authViewModel.currentUser
+    val showEmailVerificationDialog = remember { mutableStateOf(false) }
 
     // Observe the notification state
     val notificationState by notificationViewModel.notificationState.collectAsState()
     val unreadCount = notificationState.count { !it.isRead }
+
+    // Check if the user is logged in
+    LaunchedEffect(authViewModel.isLoggedIn) {
+        if (!authViewModel.isLoggedIn) {
+            navController.navigate(Screen.LoginScreen.route) {
+                popUpTo(Screen.HomeScreen.route) { inclusive = true }
+            }
+        } else if (!authViewModel.isEmailVerified) {
+            showEmailVerificationDialog.value = true
+        }
+    }
+
+    if (showEmailVerificationDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showEmailVerificationDialog.value = false },
+            title = { Text("Email Verification") },
+            text = { Text("Please verify your email to continue.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        authViewModel.isEmailVerified
+                        showEmailVerificationDialog.value = false
+                    }
+                ) {
+                    Text("Resend Verification Email")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showEmailVerificationDialog.value = false }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            HomeAppBar(
+                userName = currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User",
+                unreadCount = unreadCount,
+                onNotificationClick = { navController.navigate(Screen.NotificationScreen.route) },
+                onProfileClick = { navController.navigate(Screen.ProfileScreen.route) }
+            )
+        },
+        content = { innerPadding ->
+            HomeContent(
+                modifier = Modifier.padding(innerPadding),
+                onBookingClick = { navController.navigate(Screen.BookingScreen.route) },
+                onLogoutClick = {
+                    authViewModel.signOut()
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(Screen.HomeScreen.route) { inclusive = true }
+                    }
+                },
+                onTestNotification = { sendTestNotification(notificationViewModel) }
+            )
+        }
+    )
 
     Scaffold(
         topBar = {

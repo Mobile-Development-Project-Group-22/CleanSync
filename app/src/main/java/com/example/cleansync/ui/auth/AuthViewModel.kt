@@ -34,6 +34,7 @@ class AuthViewModel(
 
     val isLoggedIn : Boolean
         get() = authManager.currentUser != null
+
     val isEmailVerified: Boolean
         get() = authManager.currentUser?.isEmailVerified ?: false
 
