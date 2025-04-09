@@ -133,14 +133,25 @@ fun ProfileScreen(
                 fontSize = 20.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            Row {
+                Text(
+                    text = currentUser?.email ?: "No Email",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = if (profileViewModel.isEmailVerified) "Verified" else "Not Verified",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 16.sp,
+                    color = if (profileViewModel.isEmailVerified) Color.Green else Color.Red,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
-            Text(
-                text = currentUser?.email ?: "No Email",
-                style = MaterialTheme.typography.bodyMedium,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                modifier = Modifier.padding(top = 4.dp)
-            )
+
 
             Spacer(modifier = Modifier.height(24.dp))
 

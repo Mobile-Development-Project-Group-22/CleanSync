@@ -26,6 +26,10 @@ class ProfileViewModel(
 
     val currentUser = profileManager.currentUser
 
+    // check if the user's email is verified
+    val isEmailVerified: Boolean
+        get() = currentUser?.isEmailVerified ?: false
+
     // Update user profile
     fun updateUserProfile(displayName: String, photoUri: Uri?) {
         _profileState.value = ProfileState.Loading
