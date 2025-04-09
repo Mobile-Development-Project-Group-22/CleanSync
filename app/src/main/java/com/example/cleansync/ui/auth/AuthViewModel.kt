@@ -3,7 +3,6 @@ package com.example.cleansync.ui.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.AuthManager
-import com.example.cleansync.data.repository.FirebaseAuthManager
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseUser
