@@ -13,12 +13,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.navigation.BottomNavBar
 import com.example.cleansync.navigation.Screen
-import com.example.cleansync.ui.auth.AuthViewModel
-import com.example.cleansync.ui.auth.LoginScreen
-import com.example.cleansync.ui.auth.PasswordResetScreen
-import com.example.cleansync.ui.auth.SignupScreen
-import com.example.cleansync.ui.booking.BookingScreen
-import com.example.cleansync.ui.booking.BookingViewModel
+import com.example.cleansync.ui.auth.*
+import com.example.cleansync.ui.booking.*
 import com.example.cleansync.ui.home.HomeScreen
 import com.example.cleansync.ui.notifications.NotificationScreen
 import com.example.cleansync.ui.notifications.NotificationViewModel
@@ -29,11 +25,8 @@ import com.example.cleansync.ui.profile.ProfileViewModel
 fun CleanSyncApp() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
-
-    // Observing login state
     val isLoggedIn by authViewModel.isLoggedIn.collectAsState()
 
-    // Scaffold structure with bottom navigation
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -47,7 +40,6 @@ fun CleanSyncApp() {
             startDestination = if (isLoggedIn) Screen.HomeScreen.route else Screen.LoginScreen.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Navigation for login screen
             composable(Screen.LoginScreen.route) {
                 if (isLoggedIn) {
                     navController.navigate(Screen.HomeScreen.route) {
@@ -66,7 +58,6 @@ fun CleanSyncApp() {
                 }
             }
 
-            // Navigation for signup screen
             composable(Screen.SignupScreen.route) {
                 if (isLoggedIn) {
                     navController.navigate(Screen.HomeScreen.route) {
@@ -77,7 +68,6 @@ fun CleanSyncApp() {
                 }
             }
 
-            // Navigation for HomeScreen (logged-in user only)
             composable(Screen.HomeScreen.route) {
                 if (!isLoggedIn) {
                     navController.navigate(Screen.LoginScreen.route) {
@@ -93,7 +83,6 @@ fun CleanSyncApp() {
                 }
             }
 
-            // Navigation for Notifications Screen (New addition)
             composable(Screen.NotificationScreen.route) {
                 if (!isLoggedIn) {
                     navController.navigate(Screen.LoginScreen.route) {
@@ -107,7 +96,6 @@ fun CleanSyncApp() {
                 }
             }
 
-            // Navigation for ProfileScreen
             composable(Screen.ProfileScreen.route) {
                 if (!isLoggedIn) {
                     navController.navigate(Screen.LoginScreen.route) {
@@ -118,7 +106,6 @@ fun CleanSyncApp() {
                 }
             }
 
-            // Navigation for BookingScreen
             composable(Screen.BookingScreen.route) {
                 if (!isLoggedIn) {
                     navController.navigate(Screen.LoginScreen.route) {
@@ -128,7 +115,7 @@ fun CleanSyncApp() {
                     BookingScreen(
                         bookingViewModel = BookingViewModel(),
                         onBookingConfirmed = {
-                            navController.navigate(Screen.BookingConfirmationScreen.route)
+                            navController.navigate(Screen.BookingFormScreen.route)
                         },
                         onBookingCancelled = {
                             navController.navigate(Screen.HomeScreen.route)
@@ -137,7 +124,28 @@ fun CleanSyncApp() {
                 }
             }
 
-            // Navigation for PasswordResetScreen
+            // ✅ BookingFormScreen composable
+            composable(Screen.BookingFormScreen.route) {
+                BookingFormScreen(
+                    bookingViewModel = BookingViewModel(),
+                    onBookingDone = {
+                        navController.navigate(Screen.BookingConfirmationScreen.route)
+                    }
+                )
+            }
+
+            // ✅ BookingConfirmationScreen composable
+            composable(Screen.BookingConfirmationScreen.route) {
+                BookingConfirmationScreen(
+                    bookingViewModel = BookingViewModel(), // Pass the same instance if possible
+                    onReturnHome = {
+                        navController.navigate(Screen.HomeScreen.route) {
+                            popUpTo(Screen.BookingConfirmationScreen.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
             composable(Screen.PasswordResetScreen.route) {
                 if (isLoggedIn) {
                     navController.navigate(Screen.HomeScreen.route) {
