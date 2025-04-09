@@ -38,17 +38,29 @@ class AuthManager {
 
     suspend fun signUp(name: String, email: String, password: String): Result<FirebaseUser?> {
         return try {
+            // 1. Create user account
             val result = auth.createUserWithEmailAndPassword(email, password).await()
-            result.user?.let {
-                saveUserToFirestore(it.uid, name, email)
+
+            // 2. Update user profile with name
+            result.user?.let { user ->
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(name)
+                    .build()
+                user.updateProfile(profileUpdates).await()
+
+                // 3. Send verification email
+                user.sendEmailVerification().await()
+
+                // 4. Save additional user data to Firestore
+                saveUserToFirestore(user.uid, name, email)
             }
+
             Result.success(result.user)
         } catch (e: Exception) {
             Log.e("AuthManager", "Sign-up failed: ${e.message}")
             Result.failure(e)
         }
     }
-
     private suspend fun saveUserToFirestore(uid: String, name: String, email: String) {
         val user = User(uid = uid, name = name, email = email)
         firestore.collection("users").document(uid).set(user).await()

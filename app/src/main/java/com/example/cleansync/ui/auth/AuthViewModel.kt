@@ -69,17 +69,23 @@ class AuthViewModel(
         }
     }
 
-    // Sign up with name, email, and password
     fun signUp(name: String, email: String, password: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             val result = authManager.signUp(name, email, password)
             _authState.value = result.fold(
-                onSuccess = { AuthState.Success(it) },
+                onSuccess = {
+                    if (it != null) {
+                        AuthState.Success(it)
+                    } else {
+                        AuthState.Error("User creation failed")
+                    }
+                },
                 onFailure = { AuthState.Error(it.message ?: "Unknown error") }
             )
         }
     }
+
 
     // Sign out user
     fun signOut() {
