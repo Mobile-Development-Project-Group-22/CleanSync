@@ -7,11 +7,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleansync.utils.NotificationUtils
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -22,6 +25,22 @@ fun BookingConfirmationScreen(
     val selectedDateTime = bookingViewModel.selectedDateTime
     val formattedDateTime = selectedDateTime?.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
     val estimatedPrice = bookingViewModel.estimatedPrice
+    val context = LocalContext.current
+
+    // Check if the data is available and format correctly
+    val formattedPrice = estimatedPrice?.let { "€$it" } ?: "Not available"
+
+    LaunchedEffect(Unit) {
+        // Reset booking details after confirmation
+        bookingViewModel.resetBooking()
+
+        // Ensure the notification contains the properly formatted date and price
+        NotificationUtils.sendCustomNotification(
+            context = context,
+            title = "Booking Confirmation",
+            message = "Your booking has been confirmed for $formattedDateTime. Estimated Price: $formattedPrice"
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -51,14 +70,18 @@ fun BookingConfirmationScreen(
             Text(text = "📅 Date & Time: $it", fontSize = 16.sp)
         }
 
-        estimatedPrice?.let {
-            Text(text = "💰 Estimated Price: €$it", fontSize = 16.sp)
+        formattedPrice?.let {
+            Text(text = "💰 Estimated Price: $it", fontSize = 16.sp)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = onReturnHome,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White
+            ),
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Back to Home")
