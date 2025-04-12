@@ -165,7 +165,17 @@ fun BookingFormScreen(
 
         // Confirm Booking Button
         Button(
-            onClick = { onBookingDone() },
+            onClick = {
+                bookingViewModel.saveBookingToFirestore(
+                    onSuccess = {
+                        onBookingDone()
+                    },
+                    onFailure = {
+                        // Show an error message, log, etc.
+                    }
+                )
+            },
+
             enabled = bookingViewModel.acceptTerms,
             modifier = Modifier
                 .fillMaxWidth()

@@ -15,8 +15,44 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
+//libraries for firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.example.cleansync.model.Booking
+import android.util.Log
 
 class BookingViewModel : ViewModel() {
+//firebase reference
+private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    fun saveBookingToFirestore(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        val userId = auth.currentUser?.uid ?: return
+
+        val booking = Booking(
+            userId = userId,
+            name = name,
+            email = email,
+            phoneNumber = phoneNumber,
+            streetAddress = streetAddress,
+            postalCode = postalCode,
+            city = city,
+            length = length,
+            width = width,
+            estimatedPrice = estimatedPrice ?: 0f,
+            bookingDateTime = formattedDateTime
+        )
+
+        db.collection("bookings")
+            .add(booking)
+            .addOnSuccessListener {
+                Log.d("Firestore", "Booking saved successfully")
+                onSuccess()
+            }
+            .addOnFailureListener { e ->
+                Log.e("Firestore", "Error saving booking", e)
+                onFailure(e)
+            }
+    }
 
     var length by mutableStateOf("")
     var width by mutableStateOf("")
