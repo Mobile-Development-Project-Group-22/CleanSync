@@ -1,9 +1,13 @@
 package com.example.cleansync.ui.notifications
 
+import android.R.id
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.cleansync.data.model.NotificationState
+import com.example.cleansync.data.model.Notification
+import com.google.firebase.auth.FirebaseAuth
+
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,8 +17,10 @@ class NotificationViewModel : ViewModel() {
     private val db = FirebaseFirestore.getInstance()
     private val notificationsRef = db.collection("notifications")
 
-    private val _notificationState = MutableStateFlow<List<NotificationState>>(emptyList())
-    val notificationState: StateFlow<List<NotificationState>> get() = _notificationState
+    // Use a StateFlow to hold the list of notifications
+    private val _notificationState = MutableStateFlow<List<Notification>>(emptyList())
+    val notificationState: StateFlow<List<Notification>> get() = _notificationState
+
 
     // Add an error state for UI updates
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -24,6 +30,7 @@ class NotificationViewModel : ViewModel() {
         fetchNotificationsFromFirestore()
         subscribeToNotifications()
     }
+
     // Subscribe to notifications using Firebase Cloud Messaging
     private fun subscribeToNotifications() {
         FirebaseMessaging.getInstance().subscribeToTopic("notifications")
@@ -36,56 +43,57 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
-    // Fetch notifications from Firestore with real-time updates using snapshot listener
     private fun fetchNotificationsFromFirestore() {
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+            _errorMessage.value = "User not authenticated"
+            Log.e("NotificationViewModel", "User not authenticated")
+            return
+        }
+
+        Log.d("NotificationViewModel", "Fetching notifications for user: $currentUserId")
+
         notificationsRef
-            .orderBy("timestamp")
-            .addSnapshotListener { documents, e ->
-                if (e != null) {
-                    // Update error message state
+            .whereEqualTo("userId", currentUserId)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
                     _errorMessage.value = "Error fetching notifications"
-                    Log.e("NotificationViewModel", "Error fetching notifications", e)
+                    Log.e("NotificationViewModel", "Fetch error: ${error.message}")
                     return@addSnapshotListener
                 }
-                val notifications = documents?.map { doc ->
-                    doc.toObject(NotificationState::class.java).apply {
-                        id = doc.id
+
+                Log.d("NotificationViewModel", "Received snapshot with ${snapshot?.size()} documents")
+
+                val notifications = snapshot?.documents?.mapNotNull { doc ->
+                    try {
+                        doc.toObject(Notification::class.java)?.copy(id = doc.id).also {
+                            Log.d("NotificationViewModel", "Parsed notification: ${it?.message}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("NotificationViewModel", "Parse error for doc ${doc.id}", e)
+                        null
                     }
                 } ?: emptyList()
+
+                Log.d("NotificationViewModel", "Fetched ${notifications.size} notifications")
                 _notificationState.value = notifications
             }
     }
 
-    // Add a new notification to Firestore
-    fun addNotification(notification: NotificationState) {
-        notificationsRef.whereEqualTo("title", notification.title)
-            .whereEqualTo("message", notification.message)
-            .get()
-            .addOnSuccessListener { documents ->
-                if (documents.isEmpty) {
-                    notificationsRef.add(notification)
-                        .addOnSuccessListener {
-                            Log.d("NotificationViewModel", "Notification added successfully.")
-                        }
-                        .addOnFailureListener { e ->
-                            _errorMessage.value = "Error adding notification"
-                            Log.e("NotificationViewModel", "Error adding notification", e)
-                        }
-                } else {
-                    _errorMessage.value = "Notification already exists"
-                    Log.d("NotificationViewModel", "Notification already exists.")
-                }
+    fun addNotification(notification: Notification) {
+        notificationsRef.add(notification)
+            .addOnSuccessListener { documentReference ->
+                Log.d("NotificationViewModel", "Notification added with ID: ${documentReference.id}")
             }
             .addOnFailureListener { e ->
-                _errorMessage.value = "Error checking for duplicate notification"
-                Log.e("NotificationViewModel", "Error checking for duplicate notification", e)
+                _errorMessage.value = "Error adding notification"
+                Log.e("NotificationViewModel", "Error adding notification", e)
             }
     }
-
     // Mark notification as read
-    fun markNotificationAsRead(notification: NotificationState) {
+    fun markNotificationAsRead(notification: Notification) {
         notificationsRef.document(notification.id)
-            .update("isRead", true)
+            .update("read", true) // Ensure 'read' is used here instead of 'isRead'
             .addOnSuccessListener {
                 Log.d("NotificationViewModel", "Notification marked as read successfully.")
             }
@@ -96,7 +104,7 @@ class NotificationViewModel : ViewModel() {
     }
 
     // Remove a notification
-    fun removeNotification(notification: NotificationState) {
+    fun removeNotification(notification: Notification) {
         notificationsRef.document(notification.id)
             .delete()
             .addOnSuccessListener {
@@ -109,9 +117,11 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
-    // Clear all notifications
+
+    // Clear all notifications for the current user
     fun clearAllNotifications() {
-        notificationsRef
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        notificationsRef.whereEqualTo("userId", currentUserId)
             .get()
             .addOnSuccessListener { documents ->
                 for (document in documents) {
@@ -130,11 +140,12 @@ class NotificationViewModel : ViewModel() {
                 Log.e("NotificationViewModel", "Error fetching notifications to clear", e)
             }
     }
+
     // Toggle read status of a notification
-    fun toggleReadStatus(notification: NotificationState) {
-        val newStatus = !notification.isRead
+    fun toggleReadStatus(notification: Notification) {
+        val newStatus = !notification.read
         notificationsRef.document(notification.id)
-            .update("isRead", newStatus)
+            .update("read", newStatus) // Use 'read' instead of 'isRead'
             .addOnSuccessListener {
                 Log.d("NotificationViewModel", "Notification read status updated successfully.")
             }
@@ -144,10 +155,15 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
-    fun unreadNotificationsCount(): Int {
-        return _notificationState.value.count { !it.isRead }
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
 
-
+    fun refreshNotifications() {
+        fetchNotificationsFromFirestore()
+    }
+    // Count unread notifications
+    fun unreadNotificationsCount(): Int {
+        return _notificationState.value.count { !it.read }  // Use 'read' here instead of 'isRead'
+    }
 }
-

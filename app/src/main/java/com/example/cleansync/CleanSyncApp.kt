@@ -101,7 +101,7 @@ fun CleanSyncApp() {
                 } else {
                     NotificationScreen(
                         navController = navController,
-                        notificationViewModel = NotificationViewModel()
+                        viewModel = notificationViewModel
                     )
                 }
             }

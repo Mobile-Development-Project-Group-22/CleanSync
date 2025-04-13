@@ -1,6 +1,5 @@
 package com.example.cleansync.ui.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -10,13 +9,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.cleansync.data.model.NotificationState
+import com.example.cleansync.data.model.Notification
 import com.example.cleansync.navigation.Screen
-
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileViewModel
@@ -32,11 +28,9 @@ fun HomeScreen(
     val authState by authViewModel.authState.collectAsState()
     val currentUser = authViewModel.currentUser
     val showEmailVerificationDialog = remember { mutableStateOf(false) }
-
+    val unreadCount = notificationViewModel.unreadNotificationsCount()
     // Observe the notification state
     val notificationState by notificationViewModel.notificationState.collectAsState()
-    val unreadCount = notificationState.count { !it.isRead }
-
     // Check if the user is logged in
     LaunchedEffect(authViewModel.isLoggedIn) {
         if (!authViewModel.isLoggedIn) {
@@ -72,30 +66,6 @@ fun HomeScreen(
             }
         )
     }
-
-    Scaffold(
-        topBar = {
-            HomeAppBar(
-                userName = currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User",
-                unreadCount = unreadCount,
-                onNotificationClick = { navController.navigate(Screen.NotificationScreen.route) },
-                onProfileClick = { navController.navigate(Screen.ProfileScreen.route) }
-            )
-        },
-        content = { innerPadding ->
-            HomeContent(
-                modifier = Modifier.padding(innerPadding),
-                onBookingClick = { navController.navigate(Screen.BookingScreen.route) },
-                onLogoutClick = {
-                    authViewModel.signOut()
-                    navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.HomeScreen.route) { inclusive = true }
-                    }
-                },
-                onTestNotification = { sendTestNotification(notificationViewModel) }
-            )
-        }
-    )
 
     Scaffold(
         topBar = {
@@ -230,10 +200,11 @@ private fun HomeContent(
 
 private fun sendTestNotification(viewModel: NotificationViewModel) {
     viewModel.addNotification(
-        NotificationState(
-            title = "Test Notification",
+        Notification(
+            userId = "test_user_id",
             message = "This is a test notification",
-            isRead = false
+            read = false,
+            timestamp = com.google.firebase.Timestamp.now()
         )
     )
 }

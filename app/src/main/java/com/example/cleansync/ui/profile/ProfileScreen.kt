@@ -5,7 +5,16 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -32,17 +41,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.cleansync.navigation.Screen
 import com.google.firebase.auth.GoogleAuthProvider
-import androidx.core.net.toUri
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,19 +64,20 @@ fun ProfileScreen(
     // States for dialogs and preferences
     var showUpdateProfileDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var showDeletePasswordDialog by remember { mutableStateOf(false) }
+
     var newDisplayName by remember { mutableStateOf("") }
     var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmNewPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }  // Store selected image URI
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // Language preference state
-    var selectedLanguage by remember { mutableStateOf("en") }
-    val languageOptions = listOf("English", "Spanish", "French")
-    var expanded by remember { mutableStateOf(false) }
-
-    // Notification preferences state
-    var emailNotificationsEnabled by remember { mutableStateOf(true) }
-    var pushNotificationsEnabled by remember { mutableStateOf(true) }
+    // Check if user has password provider
+    val hasPasswordProvider = currentUser?.providerData?.any {
+        it.providerId == "password"
+    } == true
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -123,7 +131,7 @@ fun ProfileScreen(
                     .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     .padding(4.dp)
                     .clickable {
-                        // Implement image picker logic here (e.g., using an image picker library)
+                        // Implement image picker logic here
                     }
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -151,50 +159,84 @@ fun ProfileScreen(
                 )
             }
 
-
+            // Show password status only if user has password provider
+            if (hasPasswordProvider) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Password: ******",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Language Preferences Section
-            Text(
-                text = "Language Preferences",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth(),
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            LanguageSelector(
-                selectedLanguage = selectedLanguage,
-                onLanguageSelected = { selectedLanguage = it },
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                onButtonClicked = {
-                    Toast.makeText(context, "Change language button clicked", Toast.LENGTH_SHORT).show()
+            // Password-related buttons (only show if user has password provider)
+            if (hasPasswordProvider) {
+                Button(
+                    onClick = { showChangePasswordDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
+                ) {
+                    Text(text = "Change Password", style = MaterialTheme.typography.labelLarge)
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = { showDeletePasswordDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
+                ) {
+                    Text(text = "Delete Password", style = MaterialTheme.typography.labelLarge)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // Language Selector
+            LanguageSelector(
+                selectedLanguage = "en",
+                        onLanguageSelected = { language ->
+//                    profilexViewModel.updateLanguage(language)
+                },
+                expanded = false,
+                onExpandedChange = {
+                    // Handle dropdown expansion
+                },
+                onButtonClicked = {
+                    // Handle button click
+                    Toast.makeText(
+                        context,
+                        "Language changed to English",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Notification Preferences Section
-            Text(
-                text = "Notification Preferences",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth(),
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             NotificationPreferences(
-                emailNotificationsEnabled = emailNotificationsEnabled,
-                pushNotificationsEnabled = pushNotificationsEnabled,
-                onEmailNotificationsChanged = { emailNotificationsEnabled = it },
-                onPushNotificationsChanged = { pushNotificationsEnabled = it }
+                emailNotificationsEnabled = true,
+                pushNotificationsEnabled = true,
+                onEmailNotificationsChanged = { /* Handle email notifications change */ },
+                onPushNotificationsChanged = { /* Handle push notifications change */ }
+
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Buttons for Profile Actions
+            // Update Profile Button
             Button(
                 onClick = { showUpdateProfileDialog = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -209,6 +251,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Delete Account Button
             Button(
                 onClick = { showDeleteDialog = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -283,6 +326,211 @@ fun ProfileScreen(
             )
         }
 
+        // Change Password Dialog
+        if (showChangePasswordDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showChangePasswordDialog = false
+                    currentPassword = ""
+                    newPassword = ""
+                    confirmNewPassword = ""
+                    errorMessage = ""
+                },
+                title = { Text(text = "Change Password") },
+                text = {
+                    Column {
+                        TextField(
+                            value = currentPassword,
+                            onValueChange = { currentPassword = it },
+                            label = { Text("Current Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.textFieldColors(
+                                focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextField(
+                            value = newPassword,
+                            onValueChange = { newPassword = it },
+                            label = { Text("New Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.textFieldColors(
+                                focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextField(
+                            value = confirmNewPassword,
+                            onValueChange = { confirmNewPassword = it },
+                            label = { Text("Confirm New Password") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            isError = errorMessage.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.textFieldColors(
+                                focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        if (errorMessage.isNotEmpty()) {
+                            Text(
+                                text = errorMessage,
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            when {
+                                currentPassword.isEmpty() || newPassword.isEmpty() || confirmNewPassword.isEmpty() -> {
+                                    errorMessage = "All fields are required"
+                                }
+                                newPassword != confirmNewPassword -> {
+                                    errorMessage = "Passwords don't match"
+                                }
+                                newPassword.length < 6 -> {
+                                    errorMessage = "Password must be at least 6 characters"
+                                }
+                                else -> {
+                                    profileViewModel.changePassword(
+                                        currentPassword = currentPassword,
+                                        newPassword = newPassword,
+                                        onSuccess = {
+                                            showChangePasswordDialog = false
+                                            currentPassword = ""
+                                            newPassword = ""
+                                            confirmNewPassword = ""
+                                            errorMessage = ""
+                                            Toast.makeText(
+                                                context,
+                                                "Password changed successfully",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                        },
+                                        onFailure = { message ->
+                                            errorMessage = message
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Change Password")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = {
+                            showChangePasswordDialog = false
+                            currentPassword = ""
+                            newPassword = ""
+                            confirmNewPassword = ""
+                            errorMessage = ""
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Delete Password Dialog
+        if (showDeletePasswordDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeletePasswordDialog = false
+                    currentPassword = ""
+                    errorMessage = ""
+                },
+                title = { Text(text = "Delete Password") },
+                text = {
+                    Column {
+                        Text("Are you sure you want to delete your password?")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Note: You won't be able to sign in with email/password after this.")
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (currentUser?.providerData?.size == 1) {
+                            Text(
+                                text = "Warning: This is your only sign-in method. You must add another sign-in method first.",
+                                color = Color.Red
+                            )
+                        } else {
+                            TextField(
+                                value = currentPassword,
+                                onValueChange = { currentPassword = it },
+                                label = { Text("Current Password (for verification)") },
+                                visualTransformation = PasswordVisualTransformation(),
+                                isError = errorMessage.isNotEmpty(),
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = TextFieldDefaults.textFieldColors(
+                                    focusedIndicatorColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                        }
+
+                        if (errorMessage.isNotEmpty()) {
+                            Text(
+                                text = errorMessage,
+                                color = Color.Red,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (currentUser?.providerData?.size == 1) {
+                                errorMessage = "You must have another sign-in method before deleting your password"
+                                return@Button
+                            }
+
+                            if (currentPassword.isEmpty()) {
+                                errorMessage = "Please enter your current password"
+                                return@Button
+                            }
+
+                            profileViewModel.deletePassword(
+                                currentPassword = currentPassword,
+                                onSuccess = {
+                                    showDeletePasswordDialog = false
+                                    currentPassword = ""
+                                    errorMessage = ""
+                                    Toast.makeText(
+                                        context,
+                                        "Password deleted successfully",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                },
+                                onFailure = { message ->
+                                    errorMessage = message
+                                }
+                            )
+                        },
+                        enabled = currentUser?.providerData?.size ?: 0 > 1
+                    ) {
+                        Text("Delete Password")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = {
+                            showDeletePasswordDialog = false
+                            currentPassword = ""
+                            errorMessage = ""
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
+
         // Delete Account Dialog
         if (showDeleteDialog) {
             AlertDialog(
@@ -327,7 +575,7 @@ fun ProfileScreen(
                                         navController.navigate(Screen.LoginScreen.route) {
                                             popUpTo(Screen.ProfileScreen.route) {
                                                 inclusive = true
-                                            } // Ensures the profile screen is removed from the back stack
+                                            }
                                         }
                                         Toast.makeText(
                                             context,
@@ -339,8 +587,6 @@ fun ProfileScreen(
                                         Toast.makeText(context, errorMessage, Toast.LENGTH_LONG)
                                             .show()
                                     }
-
-
                                 )
                             } else {
                                 if (currentPassword.isNotEmpty()) {
@@ -351,7 +597,7 @@ fun ProfileScreen(
                                             navController.navigate(Screen.LoginScreen.route) {
                                                 popUpTo(Screen.ProfileScreen.route) {
                                                     inclusive = true
-                                                } // Ensures the profile screen is removed from the back stack
+                                                }
                                             }
                                             Toast.makeText(
                                                 context,
@@ -362,7 +608,6 @@ fun ProfileScreen(
                                         onFailure = { errorMessage ->
                                             Toast.makeText(context, errorMessage, Toast.LENGTH_LONG)
                                                 .show()
-
                                         },
                                         context = context
                                     )
@@ -385,13 +630,4 @@ fun ProfileScreen(
             )
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewProfileScreen() {
-    ProfileScreen(
-        profileViewModel = ProfileViewModel(),
-        navController = NavController(LocalContext.current)
-    )
 }
