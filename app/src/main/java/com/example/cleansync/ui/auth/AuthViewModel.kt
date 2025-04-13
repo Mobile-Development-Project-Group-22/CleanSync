@@ -32,7 +32,7 @@ class AuthViewModel(
         SIGNUP, LOGIN, PASSWORD_RESET, GOOGLE_SIGNIN, GENERAL
     }
 
-    val isLoggedIn : Boolean
+    val isLoggedIn: Boolean
         get() = authManager.currentUser != null
 
     val isEmailVerified: Boolean

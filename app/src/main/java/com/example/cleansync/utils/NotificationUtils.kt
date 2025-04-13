@@ -1,7 +1,5 @@
 package com.example.cleansync.utils
 
-
-
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -12,14 +10,16 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.cleansync.MainActivity
 import com.example.cleansync.R
-import com.example.cleansync.data.model.NotificationState
+import com.example.cleansync.data.model.Notification
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.UUID
 
 object NotificationUtils {
     private const val CHANNEL_ID = "cleansync_notifications"
 
+    // Function to send a custom notification to
     fun sendCustomNotification(
         context: Context,
         title: String,
@@ -56,19 +56,25 @@ object NotificationUtils {
         notificationManager.notify(UUID.randomUUID().hashCode(), notificationBuilder.build())
 
         // Save the notification to Firestore
-        saveNotificationToFirestore(title, message)
+        saveNotificationToFirestore(message)
     }
 
-    private fun saveNotificationToFirestore(title: String, message: String) {
+    private fun saveNotificationToFirestore(message: String) {
         val db = FirebaseFirestore.getInstance()
-        val notification = NotificationState(
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+            Log.e("NotificationUtils", "User not authenticated")
+            return
+        }
+
+        val notification = Notification(
             id = UUID.randomUUID().toString(),
-            title = title,
+            userId = currentUserId, // Set the actual user ID
             message = message,
-            timestamp = Timestamp.now(),
-            isRead = false
+            read = false,
+            timestamp = Timestamp.now()
         )
 
+        // Rest of the function remains the same
         db.collection("notifications")
             .add(notification)
             .addOnSuccessListener {

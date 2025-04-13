@@ -3,19 +3,21 @@ package com.example.cleansync.ui.profile
 import android.content.Context
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.ProfileManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.firebase.Firebase
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class ProfileViewModel(
     private val profileManager: ProfileManager = ProfileManager()
@@ -35,7 +37,7 @@ class ProfileViewModel(
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                profileManager.updateUserProfile(displayName, photoUri)
+                profileManager.updateUserProfile(displayName, photoUri) // Sync with Firebase and Firestore
                 _profileState.value = ProfileState.Success(profileManager.currentUser)
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update profile: ${e.message}")
@@ -43,12 +45,13 @@ class ProfileViewModel(
         }
     }
 
+
     // Update email
     fun updateEmail(newEmail: String) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                profileManager.updateEmail(newEmail)
+                profileManager.updateEmail(newEmail) // Sync with Firebase and Firestore
                 _profileState.value = ProfileState.Success(profileManager.currentUser)
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update email: ${e.message}")
@@ -56,15 +59,49 @@ class ProfileViewModel(
         }
     }
 
-    // Change password
-    fun changePassword(currentPassword: String, newPassword: String) {
-        _profileState.value = ProfileState.Loading
+    fun deletePassword(
+        currentPassword: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
         viewModelScope.launch {
             try {
-                profileManager.updatePassword(newPassword)
-                _profileState.value = ProfileState.Success(null)
+                val user = Firebase.auth.currentUser ?: throw Exception("User not logged in")
+
+                // Reauthenticate first
+                val credential = EmailAuthProvider.getCredential(user.email!!, currentPassword)
+                user.reauthenticate(credential).await()
+
+                // Remove password provider
+                user.unlink(EmailAuthProvider.PROVIDER_ID).await()
+
+                onSuccess()
             } catch (e: Exception) {
-                _profileState.value = ProfileState.Error("Failed to update password: ${e.message}")
+                onFailure(e.message ?: "Failed to delete password")
+            }
+        }
+    }
+
+    fun changePassword(
+        currentPassword: String,
+        newPassword: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val user = Firebase.auth.currentUser ?: throw Exception("User not logged in")
+
+                // Reauthenticate first
+                val credential = EmailAuthProvider.getCredential(user.email!!, currentPassword)
+                user.reauthenticate(credential).await()
+
+                // Update password
+                user.updatePassword(newPassword).await()
+
+                onSuccess()
+            } catch (e: Exception) {
+                onFailure(e.message ?: "Failed to change password")
             }
         }
     }
@@ -162,6 +199,7 @@ class ProfileViewModel(
         }
     }
 }
+
 // UI States for Profile
 sealed class ProfileState {
     object Idle : ProfileState()
