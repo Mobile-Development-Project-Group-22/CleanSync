@@ -1,6 +1,8 @@
 package com.example.cleansync.data.repository
 
+import android.graphics.Bitmap
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -8,6 +10,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
 import java.util.UUID
 
 class ProfileManager {
@@ -18,6 +21,11 @@ class ProfileManager {
     val currentUser = auth.currentUser
 
 
+    // signout
+    fun signOut() {
+        auth.signOut()
+        Log.d("ProfileManager", "User signed out.")
+    }
     // Update email address
     suspend fun updateEmail(newEmail: String) {
         val user = auth.currentUser
@@ -38,6 +46,16 @@ class ProfileManager {
             Log.e("ProfileManager", "Error updating email: ${e.message}")
         }
     }
+
+
+    suspend fun updateUserPhotoUrlInFirestore(photoUrl: String) {
+        val user = FirebaseAuth.getInstance().currentUser ?: return
+        val db = FirebaseFirestore.getInstance()
+        db.collection("users").document(user.uid)
+            .update("photoUrl", photoUrl)
+            .await()
+    }
+
 
     // Update password
     suspend fun updatePassword(newPassword: String) {
@@ -61,57 +79,55 @@ class ProfileManager {
         }
     }
 
-    suspend fun uploadProfilePhoto(photoUri: Uri): Uri? {
-        val storageReference: StorageReference = FirebaseStorage.getInstance().reference
-        val photoRef = storageReference.child("profile_photos/${UUID.randomUUID()}.jpg")
+    suspend fun uploadProfilePhoto(uri: Uri): Uri {
+        val user = auth.currentUser ?: throw Exception("No authenticated user")
+        val storageRef = FirebaseStorage.getInstance().reference
+        val photoRef = storageRef.child("profile_images/${user.uid}.jpg")
 
-        return try {
-            // Upload photo to Firebase Storage
-            val uploadTask = photoRef.putFile(photoUri).await()
-
-            // Get the download URL after the upload is complete
-            val downloadUrl = photoRef.downloadUrl.await()
-            downloadUrl
-        } catch (e: Exception) {
-            Log.e("ProfileManager", "Error uploading photo: ${e.message}")
-            null
-        }
+        photoRef.putFile(uri).await()
+        return photoRef.downloadUrl.await()
     }
 
 
-    suspend fun updateUserProfile(displayName: String, photoUri: Uri?) {
-        val user = auth.currentUser
-        val photoDownloadUrl = photoUri?.let { uploadProfilePhoto(it) }
+
+
+    suspend fun updateDisplayName(displayName: String) {
+        val user = auth.currentUser ?: throw Exception("No authenticated user")
 
         val profileUpdates = UserProfileChangeRequest.Builder()
             .setDisplayName(displayName)
+            .build()
+
+        user.updateProfile(profileUpdates).await()
+        refreshUser()
+
+        firestore.collection("users").document(user.uid)
+            .update("name", displayName)
+            .await()
+
+        Log.d("ProfileManager", "Display name updated.")
+    }
+
+    suspend fun updateProfilePicture(photoUri: Uri) {
+        val user = auth.currentUser ?: throw Exception("No authenticated user")
+
+        val photoDownloadUrl = uploadProfilePhoto(photoUri)
+
+        val profileUpdates = UserProfileChangeRequest.Builder()
             .setPhotoUri(photoDownloadUrl)
             .build()
 
-        try {
-            // Update Firebase Authentication profile
-            user?.updateProfile(profileUpdates)?.await()
-            refreshUser()  // Refresh user to make sure profile updates are reflected locally
-            Log.d("ProfileManager", "User profile updated and refreshed.")
+        user.updateProfile(profileUpdates).await()
+        refreshUser()
 
-            // Update Firestore user document
-            user?.uid?.let { uid ->
-                val updates = mutableMapOf<String, Any>(
-                    "name" to displayName
-                )
+        firestore.collection("users").document(user.uid)
+            .update("profileImageUrl", photoDownloadUrl.toString())
+            .await()
 
-                // Update profile image URL if photoUri is not null
-                photoDownloadUrl?.let {
-                    updates["profileImageUrl"] = it.toString()
-                }
-
-                firestore.collection("users").document(uid).update(updates as Map<String, Any>).await()
-                Log.d("ProfileManager", "Firestore user document updated.")
-            }
-
-        } catch (e: Exception) {
-            Log.e("ProfileManager", "Error updating profile: ${e.message}")
-        }
+        Log.d("ProfileManager", "Profile picture updated.")
     }
+
+
+
 
 }
