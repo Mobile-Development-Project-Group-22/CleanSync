@@ -1,6 +1,8 @@
 
 package com.example.cleansync.ui.notifications
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -14,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,6 +27,7 @@ import com.example.cleansync.ui.theme.CleanSyncTheme
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -40,7 +44,6 @@ fun NotificationScreen(
 
     // Show error messages with Snackbar
     LaunchedEffect(errorMessage) {
-
         errorMessage?.let {
             snackbarHostState.showSnackbar(
                 message = it,
@@ -100,7 +103,10 @@ fun NotificationTopBar(
     CenterAlignedTopAppBar(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Notifications")
+                Text(
+                    "Notifications",
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                )
                 if (unreadCount > 0) {
                     Spacer(modifier = Modifier.width(8.dp))
                     BadgedBox(badge = {
@@ -110,7 +116,8 @@ fun NotificationTopBar(
                     }) {
                         Icon(
                             Icons.Default.Notifications,
-                            contentDescription = "Unread notifications"
+                            contentDescription = "Unread notifications",
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -124,7 +131,8 @@ fun NotificationTopBar(
             IconButton(onClick = onClearAll) {
                 Icon(
                     Icons.Default.DeleteSweep,
-                    contentDescription = "Clear all notifications"
+                    contentDescription = "Clear all notifications",
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
@@ -146,17 +154,17 @@ fun EmptyNotificationsState() {
             Icon(
                 Icons.Default.NotificationsOff,
                 contentDescription = null,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(60.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "No notifications yet",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "You'll see important updates here",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "You'll see important updates here.",
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
@@ -188,7 +196,7 @@ fun NotificationList(
                 ) {
                     Text(
                         text = monthYear,
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -216,11 +224,6 @@ fun NotificationItem(
 ) {
     val readColor = MaterialTheme.colorScheme.onSurfaceVariant
     val unreadColor = MaterialTheme.colorScheme.onSurface
-    val formattedDate = notification.timestamp?.toDate()?.let {
-        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(it)
-    } ?: run {
-        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
-    }
 
     Card(
         modifier = Modifier
@@ -228,7 +231,8 @@ fun NotificationItem(
             .combinedClickable(
                 onClick = onMarkRead,
                 onLongClick = onRemove
-            ),
+            )
+            .animateContentSize(spring()),
         colors = CardDefaults.cardColors(
             containerColor = if (notification.read) {
                 MaterialTheme.colorScheme.surfaceVariant
@@ -241,41 +245,26 @@ fun NotificationItem(
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Text(
-                    text = notification.message,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (notification.read) readColor else unreadColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Icon(
-                    imageVector = if (notification.read) Icons.Default.Check else Icons.Default.Notifications,
-                    contentDescription = null,
-                    tint = if (notification.read) readColor else unreadColor
-                )
-                Text(
-                    text = formattedDate,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = readColor
-                )
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = notification.message,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = if (notification.read) FontWeight.Normal else FontWeight.Bold
+                ),
+                color = if (notification.read) readColor else unreadColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(
+                    notification.timestamp?.toDate() ?: Date()
+                ),
+                style = MaterialTheme.typography.bodySmall,
                 color = if (notification.read) readColor else unreadColor
             )
 
             if (!notification.read) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 AssistChip(
                     onClick = onMarkRead,
                     label = { Text("Mark as read") },
@@ -296,6 +285,7 @@ fun NotificationItem(
         }
     }
 }
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
