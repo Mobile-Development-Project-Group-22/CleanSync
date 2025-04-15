@@ -24,6 +24,7 @@ fun BottomNavBar(navController: NavController, unreadCount: Int) {
     val items = listOf(
         NavigationItem("Home", Icons.Default.Home, "home_screen"),
         NavigationItem("Booking", Icons.Default.CalendarToday, "booking_start_screen"),
+        NavigationItem("My Bookings", Icons.Default.CalendarToday, "my_bookings_screen"),
         NavigationItem("Notifications", Icons.Default.Notifications, "notification_screen"),
         NavigationItem("Profile", Icons.Default.Person, "profile_screen")
     )

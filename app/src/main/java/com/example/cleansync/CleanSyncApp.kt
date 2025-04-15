@@ -170,6 +170,13 @@ fun CleanSyncApp() {
                     }
                 )
             }
+            composable(Screen.MyBookingsScreen.route) {
+                MyBookingsScreen(
+                    navController = navController,
+                    bookingViewModel = bookingViewModel
+                )
+            }
+
         }
     }
 }
