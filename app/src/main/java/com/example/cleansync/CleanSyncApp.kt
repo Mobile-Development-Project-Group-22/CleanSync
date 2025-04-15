@@ -41,7 +41,11 @@ fun CleanSyncApp() {
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
             if (isLoggedIn) {
-                BottomNavBar(navController = navController)
+                BottomNavBar(
+                    navController = navController,
+                    unreadCount = notificationViewModel.unreadNotificationsCount()
+                    
+                )
             }
         }
     ) { innerPadding ->
