@@ -46,6 +46,7 @@ fun BookingFormScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val addressSuggestions by bookingViewModel.addressSuggestions.collectAsState()
+    val errorMessage = bookingViewModel.errorMessage
 
     val locationPermissionState = rememberPermissionState(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
@@ -162,7 +163,13 @@ fun BookingFormScreen(
             Spacer(modifier = Modifier.width(8.dp))
             Text("I accept the terms and conditions", fontSize = 14.sp)
         }
-
+        if (!errorMessage.isNullOrBlank()) {
+            Text(
+                text = errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
         // Confirm Booking Button
         Button(
             onClick = {
