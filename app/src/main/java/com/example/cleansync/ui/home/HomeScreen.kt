@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -16,6 +17,7 @@ import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileViewModel
+import com.example.cleansync.utils.NotificationUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,6 +151,7 @@ private fun HomeContent(
     onLogoutClick: () -> Unit,
     onTestNotification: () -> Unit
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -171,7 +174,13 @@ private fun HomeContent(
 
         // Secondary action button
         OutlinedButton(
-            onClick = onTestNotification,
+            onClick = {
+                NotificationUtils.sendCustomNotification(
+                    context = context,
+                    title = "Test Notification",
+                    message = "This is a test notification"
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
