@@ -12,5 +12,6 @@ data class Booking(
     val width: String = "",
     val estimatedPrice: Float = 0f,
     val bookingDateTime: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    var id: String? = null // 🔥 Add this line to hold Firestore document ID
 )
