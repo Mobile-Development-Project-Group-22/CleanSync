@@ -10,6 +10,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
+    <!-- Remove the android:available="true" part -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <!-- SMS Permissions -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -26,15 +29,6 @@
         android:theme="@style/Theme.CleanSync"
         tools:targetApi="31">
 
-        <!-- Declare the BroadcastReceiver in your manifest -->
-        <receiver
-            android:name=".data.service.NotificationReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.example.cleansync.NOTIFICATION" />
-            </intent-filter>
-        </receiver> <!-- Set to true if you need it to be publicly available -->
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -48,12 +42,14 @@
 
         <!-- 🔹 Firebase Messaging Service -->
         <service
-            android:name=".data.service.NotificationReceiver"
+            android:name="com.google.firebase.messaging.FirebaseMessagingService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
+
+        <receiver android:name=".data.service.LocalNotificationReceiver" />
 
     </application>
 

@@ -1,39 +1,44 @@
-// BookingConfirmationScreen.kt
-
 package com.example.cleansync.ui.booking
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cleansync.utils.DateTimeUtils.toEpochMillis
 import com.example.cleansync.utils.NotificationUtils
 import java.time.format.DateTimeFormatter
+
 @Composable
 fun BookingConfirmationScreen(
     bookingViewModel: BookingViewModel,
     onReturnHome: () -> Unit
 ) {
-    val selectedDateTime = bookingViewModel.selectedDateTime
-    val formattedDateTime = selectedDateTime?.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
-    val estimatedPrice = bookingViewModel.estimatedPrice
     val context = LocalContext.current
+    val selectedDateTime = bookingViewModel.selectedDateTime
+    val estimatedPrice = bookingViewModel.estimatedPrice
+    val formattedDateTime = remember(selectedDateTime) {
+        selectedDateTime?.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
+    }
+    val formattedPrice = remember(estimatedPrice) {
+        estimatedPrice?.let { "€$it" } ?: "Not available"
+    }
 
-    val formattedPrice = estimatedPrice?.let { "€$it" } ?: "Not available"
-
+    // Send a confirmation push (once)
     LaunchedEffect(Unit) {
-        NotificationUtils.sendCustomNotification(
-            context = context,
-            title = "Booking Confirmation",
-            message = "Your booking has been confirmed for $formattedDateTime. Estimated Price: $formattedPrice"
-        )
+        formattedDateTime?.let {
+            NotificationUtils.sendCustomNotification(
+                context = context,
+                title = "Booking Confirmation",
+                message = "Your booking has been confirmed for $it. Estimated Price: $formattedPrice"
+            )
+        }
     }
 
     Column(
@@ -61,18 +66,30 @@ fun BookingConfirmationScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         formattedDateTime?.let {
-            Text(text = " ⏰ Date & Time: $it", fontSize = 16.sp)
+            Text(text = "⏰ Date & Time: $it", fontSize = 16.sp)
         }
 
-        formattedPrice.let {
-            Text(text = "💰 Estimated Price: $it", fontSize = 16.sp)
-        }
+        Text(text = "💰 Estimated Price: $formattedPrice", fontSize = 16.sp)
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
             onClick = {
-                bookingViewModel.resetBooking() // 🔄 Clear ONLY when user returns home
+                // Schedule reminder 1 hour before
+                selectedDateTime?.let { dateTime ->
+                    val millis = selectedDateTime
+                        ?.minusMinutes(60)
+                        ?.toEpochMillis()
+
+                    NotificationUtils.scheduleLocalNotification(
+                        context = context,
+                        title = "Booking Reminder",
+                        message = "Your booking is in 1 hour!",
+                        timeInMillis = millis
+                    )
+                }
+
+                bookingViewModel.resetBooking()
                 onReturnHome()
             },
             colors = ButtonDefaults.buttonColors(
@@ -85,4 +102,3 @@ fun BookingConfirmationScreen(
         }
     }
 }
-
