@@ -37,6 +37,8 @@ fun MyBookingsScreen(
     var loading by remember { mutableStateOf(true) }
     var expandedCard by remember { mutableStateOf<String?>(null) }
     var bookingBeingEdited by remember { mutableStateOf<Booking?>(null) }
+    var showCancelDialog by remember { mutableStateOf(false) }
+    var bookingToCancel by remember { mutableStateOf<Booking?>(null) }
 
     // Fetch bookings from Firestore
     LaunchedEffect(userId) {
@@ -80,13 +82,14 @@ fun MyBookingsScreen(
                             bookingBeingEdited = booking
                         },
                         onCancel = {
-                            db.collection("bookings").document(booking.id!!).delete()
-                            bookings = bookings.filter { it.id != booking.id }
+                            bookingToCancel = booking
+                            showCancelDialog = true
                         }
                     )
                 }
             }
 
+            // Edit Dialog
             bookingBeingEdited?.let { booking ->
                 EditBookingDialog(
                     booking = booking,
@@ -100,6 +103,29 @@ fun MyBookingsScreen(
                                 }
                             }
                         bookingBeingEdited = null
+                    }
+                )
+            }
+
+            // Cancel Confirmation Dialog
+            if (showCancelDialog && bookingToCancel != null) {
+                AlertDialog(
+                    onDismissRequest = { showCancelDialog = false },
+                    title = { Text("Cancel Booking") },
+                    text = { Text("Are you sure you want to cancel this booking?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            db.collection("bookings").document(bookingToCancel!!.id!!).delete()
+                            bookings = bookings.filter { it.id != bookingToCancel!!.id }
+                            showCancelDialog = false
+                        }) {
+                            Text("Yes")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showCancelDialog = false }) {
+                            Text("No")
+                        }
                     }
                 )
             }
