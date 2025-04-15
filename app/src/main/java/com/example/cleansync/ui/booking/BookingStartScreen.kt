@@ -15,7 +15,7 @@ import java.time.LocalDateTime
 import java.util.*
 
 @Composable
-fun BookingScreen(
+fun BookingStartScreen(
     bookingViewModel: BookingViewModel,
     onBookingConfirmed: () -> Unit,
     onBookingCancelled: () -> Unit
@@ -27,15 +27,11 @@ fun BookingScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Step 1: Show Calculate Price Button
         Button(onClick = { bookingViewModel.toggleInputFields() }) {
             Text("Calculate Price")
         }
 
-        // Step 2: Show Length & Width inputs if toggle is true
         if (bookingViewModel.showInputFields) {
-            Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = bookingViewModel.length,
                 onValueChange = { bookingViewModel.length = it },
@@ -43,8 +39,6 @@ fun BookingScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = bookingViewModel.width,
@@ -54,22 +48,14 @@ fun BookingScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Step 3: Calculate Now Button
             Button(onClick = { bookingViewModel.calculatePrice() }) {
                 Text("Calculate Now")
             }
         }
 
-        // Step 4: Show Calculated Price
         bookingViewModel.estimatedPrice?.let { price ->
-            Spacer(modifier = Modifier.height(16.dp))
             Text("Estimated Price: €$price")
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Step 5: Show Date & Time Picker
             Button(onClick = {
                 showDateTimePicker(context, bookingViewModel)
             }) {
@@ -77,25 +63,24 @@ fun BookingScreen(
             }
         }
 
-        // Step 6: Show selected date & time summary
         bookingViewModel.selectedDateTime?.let {
-            Spacer(modifier = Modifier.height(16.dp))
             Text("Selected: ${bookingViewModel.formattedDateTime}")
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             Button(onClick = {
-                // ✅ Navigate to Booking Form (not confirmation directly)
                 onBookingConfirmed()
             }) {
                 Text("Continue to Booking Form")
+            }
+
+            Button(onClick = onBookingCancelled) {
+                Text("Cancel")
             }
         }
     }
 }
 
-fun showDateTimePicker(context: Context, viewModel: BookingViewModel) {
-    val calendar = Calendar.getInstance()
+fun showDateTimePicker(context: Context, bookingViewModel: BookingViewModel) {
+    val current = Calendar.getInstance()
 
     DatePickerDialog(
         context,
@@ -103,15 +88,16 @@ fun showDateTimePicker(context: Context, viewModel: BookingViewModel) {
             TimePickerDialog(
                 context,
                 { _, hour, minute ->
-                    viewModel.selectedDateTime = LocalDateTime.of(year, month + 1, day, hour, minute)
+                    val selectedDateTime = LocalDateTime.of(year, month + 1, day, hour, minute)
+                    bookingViewModel.updateSelectedDateTime(selectedDateTime) // updated name
                 },
-                calendar.get(Calendar.HOUR_OF_DAY),
-                calendar.get(Calendar.MINUTE),
+                current.get(Calendar.HOUR_OF_DAY),
+                current.get(Calendar.MINUTE),
                 true
             ).show()
         },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
+        current.get(Calendar.YEAR),
+        current.get(Calendar.MONTH),
+        current.get(Calendar.DAY_OF_MONTH)
     ).show()
 }

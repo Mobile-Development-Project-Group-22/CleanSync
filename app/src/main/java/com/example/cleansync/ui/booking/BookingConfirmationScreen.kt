@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleansync.utils.NotificationUtils
 import java.time.format.DateTimeFormatter
-
 @Composable
 fun BookingConfirmationScreen(
     bookingViewModel: BookingViewModel,
@@ -27,14 +26,9 @@ fun BookingConfirmationScreen(
     val estimatedPrice = bookingViewModel.estimatedPrice
     val context = LocalContext.current
 
-    // Check if the data is available and format correctly
     val formattedPrice = estimatedPrice?.let { "€$it" } ?: "Not available"
 
     LaunchedEffect(Unit) {
-        // Reset booking details after confirmation
-        bookingViewModel.resetBooking()
-
-        // Ensure the notification contains the properly formatted date and price
         NotificationUtils.sendCustomNotification(
             context = context,
             title = "Booking Confirmation",
@@ -67,17 +61,20 @@ fun BookingConfirmationScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         formattedDateTime?.let {
-            Text(text = "📅 Date & Time: $it", fontSize = 16.sp)
+            Text(text = " ⏰ Date & Time: $it", fontSize = 16.sp)
         }
 
-        formattedPrice?.let {
+        formattedPrice.let {
             Text(text = "💰 Estimated Price: $it", fontSize = 16.sp)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = onReturnHome,
+            onClick = {
+                bookingViewModel.resetBooking() // 🔄 Clear ONLY when user returns home
+                onReturnHome()
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = Color.White
@@ -88,3 +85,4 @@ fun BookingConfirmationScreen(
         }
     }
 }
+

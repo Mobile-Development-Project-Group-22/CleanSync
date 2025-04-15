@@ -81,7 +81,7 @@ fun HomeScreen(
         content = { innerPadding ->
             HomeContent(
                 modifier = Modifier.padding(innerPadding),
-                onBookingClick = { navController.navigate(Screen.BookingScreen.route) },
+                onBookingClick = { navController.navigate(Screen.BookingStartScreen.route) },
                 onLogoutClick = {
                     authViewModel.signOut()
                     navController.navigate(Screen.LoginScreen.route) {

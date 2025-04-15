@@ -1,6 +1,7 @@
 package com.example.cleansync.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -22,7 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun BottomNavBar(navController: NavController, unreadCount: Int) {
     val items = listOf(
         NavigationItem("Home", Icons.Default.Home, "home_screen"),
-        NavigationItem("Booking", Icons.Default.Home, "booking_screen"),
+        NavigationItem("Booking", Icons.Default.CalendarToday, "booking_start_screen"),
         NavigationItem("Notifications", Icons.Default.Notifications, "notification_screen"),
         NavigationItem("Profile", Icons.Default.Person, "profile_screen")
     )

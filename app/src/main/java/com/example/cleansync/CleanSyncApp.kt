@@ -24,17 +24,14 @@ import com.example.cleansync.ui.profile.ProfileViewModel
 @Composable
 fun CleanSyncApp() {
     val navController = rememberNavController()
+
     val authViewModel: AuthViewModel = viewModel()
     val notificationViewModel: NotificationViewModel = viewModel()
     val profileViewModel: ProfileViewModel = viewModel()
     val bookingViewModel: BookingViewModel = viewModel()
 
     val isLoggedIn = authViewModel.authState.collectAsState().value.let { state ->
-        when (state) {
-            is AuthViewModel.AuthState.LoginSuccess -> true
-            is AuthViewModel.AuthState.SignupSuccess -> true
-            else -> false
-        }
+        state is AuthViewModel.AuthState.LoginSuccess || state is AuthViewModel.AuthState.SignupSuccess
     }
 
     Scaffold(
@@ -44,7 +41,6 @@ fun CleanSyncApp() {
                 BottomNavBar(
                     navController = navController,
                     unreadCount = notificationViewModel.unreadNotificationsCount()
-                    
                 )
             }
         }
@@ -54,6 +50,8 @@ fun CleanSyncApp() {
             startDestination = if (isLoggedIn) Screen.HomeScreen.route else Screen.LoginScreen.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+
+            // Auth Screens
             composable(Screen.LoginScreen.route) {
                 if (isLoggedIn) {
                     navController.navigate(Screen.HomeScreen.route) {
@@ -82,6 +80,17 @@ fun CleanSyncApp() {
                 }
             }
 
+            composable(Screen.PasswordResetScreen.route) {
+                if (isLoggedIn) {
+                    navController.navigate(Screen.HomeScreen.route) {
+                        popUpTo(Screen.PasswordResetScreen.route) { inclusive = true }
+                    }
+                } else {
+                    PasswordResetScreen(navController = navController)
+                }
+            }
+
+            // Main Screens
             composable(Screen.HomeScreen.route) {
                 if (!isLoggedIn) {
                     navController.navigate(Screen.LoginScreen.route) {
@@ -91,8 +100,8 @@ fun CleanSyncApp() {
                     HomeScreen(
                         navController = navController,
                         authViewModel = authViewModel,
-                        notificationViewModel = NotificationViewModel(),
-                        profileViewModel = ProfileViewModel(),
+                        notificationViewModel = notificationViewModel,
+                        profileViewModel = profileViewModel
                     )
                 }
             }
@@ -116,18 +125,22 @@ fun CleanSyncApp() {
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 } else {
-                    ProfileScreen(navController = navController, profileViewModel = ProfileViewModel())
+                    ProfileScreen(
+                        navController = navController,
+                        profileViewModel = profileViewModel
+                    )
                 }
             }
 
-            composable(Screen.BookingScreen.route) {
+            // Booking Flow Screens
+            composable(Screen.BookingStartScreen.route) {
                 if (!isLoggedIn) {
                     navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.BookingScreen.route) { inclusive = true }
+                        popUpTo(Screen.BookingStartScreen.route) { inclusive = true }
                     }
                 } else {
-                    BookingScreen(
-                        bookingViewModel = BookingViewModel(),
+                    BookingStartScreen(
+                        bookingViewModel = bookingViewModel,
                         onBookingConfirmed = {
                             navController.navigate(Screen.BookingFormScreen.route)
                         },
@@ -138,36 +151,24 @@ fun CleanSyncApp() {
                 }
             }
 
-            // ✅ BookingFormScreen composable
             composable(Screen.BookingFormScreen.route) {
                 BookingFormScreen(
-                    bookingViewModel = BookingViewModel(),
+                    bookingViewModel = bookingViewModel,
                     onBookingDone = {
                         navController.navigate(Screen.BookingConfirmationScreen.route)
                     }
                 )
             }
 
-            // ✅ BookingConfirmationScreen composable
             composable(Screen.BookingConfirmationScreen.route) {
                 BookingConfirmationScreen(
-                    bookingViewModel = BookingViewModel(), // Pass the same instance if possible
+                    bookingViewModel = bookingViewModel,
                     onReturnHome = {
                         navController.navigate(Screen.HomeScreen.route) {
                             popUpTo(Screen.BookingConfirmationScreen.route) { inclusive = true }
                         }
                     }
                 )
-            }
-
-            composable(Screen.PasswordResetScreen.route) {
-                if (isLoggedIn) {
-                    navController.navigate(Screen.HomeScreen.route) {
-                        popUpTo(Screen.PasswordResetScreen.route) { inclusive = true }
-                    }
-                } else {
-                    PasswordResetScreen(navController = navController)
-                }
             }
         }
     }
