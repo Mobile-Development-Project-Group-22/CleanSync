@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.home
 
+import android.widget.CalendarView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -11,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.example.cleansync.data.model.Notification
 import com.example.cleansync.navigation.Screen
@@ -18,6 +20,7 @@ import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileViewModel
 import com.example.cleansync.utils.NotificationUtils
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,9 +34,8 @@ fun HomeScreen(
     val currentUser = authViewModel.currentUser
     val showEmailVerificationDialog = remember { mutableStateOf(false) }
     val unreadCount = notificationViewModel.unreadNotificationsCount()
-    // Observe the notification state
     val notificationState by notificationViewModel.notificationState.collectAsState()
-    // Check if the user is logged in
+
     LaunchedEffect(authViewModel.isLoggedIn) {
         if (!authViewModel.isLoggedIn) {
             navController.navigate(Screen.LoginScreen.route) {
@@ -115,7 +117,6 @@ private fun HomeAppBar(
             titleContentColor = MaterialTheme.colorScheme.onSurface
         ),
         actions = {
-            // Notification icon with badge
             BadgedBox(
                 badge = {
                     if (unreadCount > 0) {
@@ -133,7 +134,6 @@ private fun HomeAppBar(
                 }
             }
 
-            // Profile icon
             IconButton(onClick = onProfileClick) {
                 Icon(
                     Icons.Default.AccountCircle,
@@ -152,6 +152,8 @@ private fun HomeContent(
     onTestNotification: () -> Unit
 ) {
     val context = LocalContext.current
+    val selectedDate = remember { mutableStateOf("") }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -161,7 +163,17 @@ private fun HomeContent(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Primary action button
+        // Calendar at the top
+        CalendarView(
+            selectedDate = selectedDate.value,
+            bookingDate = "2023-12-25", // Example booking date
+            onDateChange = { date ->
+                selectedDate.value = date
+            }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         FilledTonalButton(
             onClick = onBookingClick,
             modifier = Modifier
@@ -172,7 +184,6 @@ private fun HomeContent(
             Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
         }
 
-        // Secondary action button
         OutlinedButton(
             onClick = {
                 NotificationUtils.sendCustomNotification(
@@ -191,7 +202,6 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Logout button
         TextButton(
             onClick = onLogoutClick,
             modifier = Modifier.fillMaxWidth()
@@ -204,6 +214,44 @@ private fun HomeContent(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+    }
+}
+
+@Composable
+fun CalendarView(
+    selectedDate: String,
+    bookingDate: String?, // Pass the booking date
+    onDateChange: (String) -> Unit
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            text = "Selected Date: $selectedDate",
+            style = MaterialTheme.typography.titleMedium
+        )
+        AndroidView(
+            factory = { context ->
+                CalendarView(context).apply {
+                    // Highlight the booking date if available
+                    bookingDate?.let { date ->
+                        val parts = date.split("-")
+                        if (parts.size == 3) {
+                            val year = parts[0].toInt()
+                            val month = parts[1].toInt() - 1 // Month is 0-based
+                            val day = parts[2].toInt()
+                            val calendar = java.util.Calendar.getInstance()
+                            calendar.set(year, month, day)
+                            this.date = calendar.timeInMillis
+                        }
+                    }
+
+                    setOnDateChangeListener { _, year, month, dayOfMonth ->
+                        val date = "$year-${month + 1}-$dayOfMonth"
+                        onDateChange(date)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

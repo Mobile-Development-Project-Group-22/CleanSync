@@ -109,8 +109,7 @@ dependencies {
 
 // JSON (if needed for manual parsing, optional with Retrofit + Gson)
     implementation("org.json:json:20210307")
-
-
+    implementation(libs.places)
 
 
     // Testing
