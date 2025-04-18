@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.auth
 
+import android.content.Context
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -121,23 +122,17 @@ fun LoginScreen(
         )
     }
 
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        try {
-            val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                .getResult(ApiException::class.java)
-            account?.idToken?.let {
-                // Sign in with Google Token and notify success
-                authViewModel.signInWithGoogle(it)
-                onLoginSuccess() // Now only on success
-            }
-        } catch (e: ApiException) {
-            val errorMessage = "Google Sign-In failed: ${e.statusCode}"
-            Log.e("GoogleSignInError", errorMessage)
-            // Handle failure if necessary, like showing a toast or updating the UI
+    val googleSignInLauncher = rememberGoogleSignInHandler(
+        context = context,
+        onTokenReceived = { token ->
+            authViewModel.signInWithGoogle(token)
+        },
+        onError = { error ->
+            errorMessage = error
+            showErrorDialog = true
         }
-    }
+    )
+
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -315,7 +310,7 @@ fun LoginScreen(
             // Google Sign-In Button
             OutlinedButton(
                 onClick = {
-                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                   googleSignInLauncher()  // Launch Google Sign-In
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -385,6 +380,10 @@ fun String.isValidEmail(): Boolean {
     val emailRegex = Regex("^[A-Za-z](.*)([@]{1})(.{1,})(\\.)(.{1,})")
     return emailRegex.matches(this)
 }
+
+
+
+
 
 @Preview(showBackground = true)
 @Composable
