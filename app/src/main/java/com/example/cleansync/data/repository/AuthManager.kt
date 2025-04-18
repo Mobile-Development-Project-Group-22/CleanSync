@@ -35,6 +35,17 @@ class AuthManager {
         }
     }
 
+    // resend email verification
+    suspend fun resendEmailVerification(email: String): Result<Unit> {
+        return try {
+            val user = auth.currentUser
+            user?.sendEmailVerification()?.await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            handleAuthError<Unit>("Failed to send email verification", e)
+        }
+    }
+
     // Sign up a new user with email and password
     suspend fun signUp(
         name: String,
@@ -53,7 +64,6 @@ class AuthManager {
 
                 // Update user profile and send email verification
                 user.updateProfile(profileUpdates).await()
-                user.sendEmailVerification().await()
 
                 // Save user data to Firestore
                 saveUserToFirestore(user.uid, name, email, profileImageUrl, phoneNumber)

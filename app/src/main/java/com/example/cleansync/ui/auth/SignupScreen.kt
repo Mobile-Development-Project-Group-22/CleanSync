@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -21,20 +22,17 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel.AuthState
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import kotlinx.coroutines.delay
 
 @Composable
 fun SignupScreen(
-    navController: NavController,
-    authViewModel: AuthViewModel
+    onSignupSuccess: () -> Unit,
+    authViewModel: AuthViewModel,
+    onNavigateToLogin: () -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -45,8 +43,11 @@ fun SignupScreen(
     val authState by authViewModel.authState.collectAsState()
     val context = LocalContext.current
     var showVerificationDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
 
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var verificationMessage by remember { mutableStateOf("") }
     // Debounce state
     var isSignupEnabled by remember { mutableStateOf(true) }
 
@@ -60,51 +61,116 @@ fun SignupScreen(
         }
     }
 
-    if (showVerificationDialog) {
-        EmailVerificationDialog(
-            email = email,
-            onDismiss = { showVerificationDialog = false },
-            onNavigateToLogin = {
-                showVerificationDialog = false
-                navController.navigate(Screen.LoginScreen.route) {
-                    popUpTo(Screen.SignupScreen.route) { inclusive = true }
-                }
-            },
-            autoNavigateAfterSeconds = 10
-        )
-    }
-
+    // Handle authentication state
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.SignupSuccess -> {
                 isSignupEnabled = true
-                authViewModel.currentUser?.let { user ->
-                    if (!user.isEmailVerified) {
-                        try {
-                            user.sendEmailVerification()
-                            showVerificationDialog = true
-                        } catch (e: Exception) {
-                            Toast.makeText(
-                                context,
-                                "Failed to send verification email",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            // Still navigate to login even if email fails
-                            navController.navigate(Screen.LoginScreen.route) {
-                                popUpTo(Screen.SignupScreen.route) { inclusive = true }
-                            }
-                        }
-                    } else {
-                        // If somehow already verified, go to login
-                        navController.navigate(Screen.LoginScreen.route) {
-                            popUpTo(Screen.SignupScreen.route) { inclusive = true }
-                        }
-                    }
+                showVerificationDialog = true
+//                navigate to login screen
+                onSignupSuccess()
+
+            }
+            is AuthState.Error -> {
+                isSignupEnabled = true
+                errorMessage = when (val error = authState as AuthState.Error) {
+                    is FirebaseAuthUserCollisionException -> "Email already in use"
+                    is FirebaseAuthInvalidCredentialsException -> "Invalid email or password"
+                    else -> error.message
                 }
             }
-            else -> Unit // Handle other states if necessary
-            // ... rest of the cases ...
+            else -> Unit
         }
+
+
+
+    }
+
+    // Error Dialog
+    if (errorMessage.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { errorMessage = "" },
+            title = { Text("Error") },
+            text = { Text(errorMessage) },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = "" }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    // Error Dialog
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { showErrorDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = "Error",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text("Login Failed")
+            },
+            text = {
+                Text(errorMessage)
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showErrorDialog = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text("OK")
+                }
+            },
+
+            )
+    }
+    // Verification Dialog
+    if (showVerificationDialog) {
+        AlertDialog(
+            onDismissRequest = { showVerificationDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Error,
+                    contentDescription = "Email not verified",
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text("Email Not Verified")
+            },
+            text = {
+                Text(verificationMessage)
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showVerificationDialog = false
+                        authViewModel.resendVerificationEmail()
+                        verificationMessage = "A verification email has been sent to $email."
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text("Send Verification Email")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { showVerificationDialog = false },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     Surface(
@@ -257,7 +323,6 @@ fun SignupScreen(
                         isSignupEnabled = false
                         focusManager.clearFocus()
                         authViewModel.signUp(name, email, password)
-                        showVerificationDialog = true
                     } else {
                         Toast.makeText(
                             context,
@@ -303,81 +368,10 @@ fun SignupScreen(
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable {
-                        navController.navigate(Screen.LoginScreen.route) {
-                            popUpTo(Screen.SignupScreen.route) { inclusive = true }
-                        }
+                        onNavigateToLogin()
                     }
                 )
             }
         }
     }
-
-    if (showVerificationDialog) {
-        EmailVerificationDialog(
-            email = email,
-            onDismiss = { showVerificationDialog = false },
-            onNavigateToLogin = {
-                showVerificationDialog = false
-            },
-            autoNavigateAfterSeconds = 10
-        )
-    }
-}
-
-@Composable
-fun EmailVerificationDialog(
-    email: String,
-    onDismiss: () -> Unit,
-    onNavigateToLogin: () -> Unit,
-    autoNavigateAfterSeconds: Int = 10
-) {
-    var countdown by remember { mutableStateOf(autoNavigateAfterSeconds) }
-
-    LaunchedEffect(Unit) {
-        while (countdown > 0) {
-            delay(1000L)
-            countdown--
-        }
-        if (countdown == 0) {
-            onNavigateToLogin()
-        }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Verify Your Email",
-                style = MaterialTheme.typography.headlineSmall
-            )
-        },
-        text = {
-            Column {
-                Text("We've sent a verification email to:")
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    email,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Please check your inbox and verify your email before logging in.")
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Redirecting to login in $countdown seconds...",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onNavigateToLogin
-            ) {
-                Text("Go to Login Now")
-            }
-        },
-        shape = MaterialTheme.shapes.large
-    )
 }

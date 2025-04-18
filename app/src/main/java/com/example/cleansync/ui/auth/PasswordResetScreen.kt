@@ -2,9 +2,7 @@ package com.example.cleansync.ui.auth
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -20,24 +18,20 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
 import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel.AuthState
 import com.example.cleansync.utils.NotificationUtils
-import kotlinx.coroutines.delay
-
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordResetScreen(
-    navController: NavController,
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    onNavigateToLogin: () -> Unit,
+    onPasswordResetSuccess: () -> Unit
+
 ) {
     var email by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf<String?>(null) }
@@ -95,9 +89,7 @@ fun PasswordResetScreen(
                 Button(
                     onClick = {
                         showSuccessDialog = false
-                        navController.navigate(Screen.LoginScreen.route) {
-                            popUpTo(Screen.PasswordResetScreen.route) { inclusive = true }
-                        }
+                        onPasswordResetSuccess()
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.large,
@@ -127,7 +119,9 @@ fun PasswordResetScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = { navController.popBackStack() }
+                        onClick = {
+                            onNavigateToLogin()
+                        }
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

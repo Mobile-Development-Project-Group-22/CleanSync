@@ -22,7 +22,6 @@ import com.example.cleansync.data.model.Notification
 
 @Composable
 fun NotificationScreen(
-    navController: NavController,
     viewModel: NotificationViewModel
 ) {
     // Collecting the state from ViewModel
@@ -124,7 +123,8 @@ fun NotificationItem(notification: Notification, viewModel: NotificationViewMode
 @Composable
 fun NotificationScreenPreview() {
     CleanSyncTheme {
-        val mockViewModel = NotificationViewModel()  // You can create a mock ViewModel if needed for preview
-        NotificationScreen(navController = rememberNavController(), viewModel = mockViewModel)
+      NotificationScreen(
+            viewModel = NotificationViewModel()
+      )
     }
 }
