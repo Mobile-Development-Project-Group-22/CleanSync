@@ -44,17 +44,24 @@ class AuthViewModel(
     val currentUser: FirebaseUser? get() = authManager.currentUser
 
     fun signInWithGoogle(idToken: String) {
+        // Set the state to Loading while waiting for the Google sign-in result
         _authState.value = AuthState.Loading
+
         viewModelScope.launch {
             try {
+                // Create the Google authentication credential
                 val credential: AuthCredential = GoogleAuthProvider.getCredential(idToken, null)
+
+                // Attempt to sign in with the credential
                 val result = authManager.signInWithCredential(credential)
 
                 result.fold(
                     onSuccess = { user ->
                         if (user.isEmailVerified) {
+                            // User is logged in, and email is verified
                             _authState.value = AuthState.LoginSuccess(user)
                         } else {
+                            // If the email is not verified, show an error message
                             _authState.value = AuthState.Error(
                                 "Please verify your email first",
                                 ErrorType.GOOGLE_SIGNIN
@@ -62,15 +69,23 @@ class AuthViewModel(
                         }
                     },
                     onFailure = { error ->
+                        // In case of failure, log the error and update the state
+                        val errorMessage = error.message ?: "Google authentication failed"
+                        Log.e("GoogleSignInError", errorMessage)
+
                         _authState.value = AuthState.Error(
-                            error.message ?: "Google authentication failed",
+                            errorMessage,
                             ErrorType.GOOGLE_SIGNIN
                         )
                     }
                 )
             } catch (e: Exception) {
+                // Catch unexpected errors during the Google Sign-In process
+                val errorMessage = "Error during Google sign-in: ${e.message}"
+                Log.e("GoogleSignInError", errorMessage)
+
                 _authState.value = AuthState.Error(
-                    "Error during Google sign-in: ${e.message}",
+                    errorMessage,
                     ErrorType.GOOGLE_SIGNIN
                 )
             }

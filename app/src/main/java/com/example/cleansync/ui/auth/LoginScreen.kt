@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.auth
 
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -33,6 +34,7 @@ import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel.AuthState
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+
 import com.google.android.gms.common.api.ApiException
 
 @Composable
@@ -57,6 +59,8 @@ fun LoginScreen(
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
+
+
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Error -> {
@@ -67,6 +71,10 @@ fun LoginScreen(
                 onLoginSuccess()
 
             }
+            is AuthState.LoginSuccess -> {
+                onLoginSuccess()
+            }
+
             else -> {}
         }
     }
@@ -119,9 +127,15 @@ fun LoginScreen(
         try {
             val account = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 .getResult(ApiException::class.java)
-            account?.idToken?.let { authViewModel.signInWithGoogle(it) }
+            account?.idToken?.let {
+                // Sign in with Google Token and notify success
+                authViewModel.signInWithGoogle(it)
+                onLoginSuccess() // Now only on success
+            }
         } catch (e: ApiException) {
-            // Handle error
+            val errorMessage = "Google Sign-In failed: ${e.statusCode}"
+            Log.e("GoogleSignInError", errorMessage)
+            // Handle failure if necessary, like showing a toast or updating the UI
         }
     }
 
@@ -249,7 +263,6 @@ fun LoginScreen(
                         password.isBlank() -> passwordError = "Password is required"
                         else -> authViewModel.signIn(email, password)
                     }
-                    onLoginSuccess()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -303,7 +316,6 @@ fun LoginScreen(
             OutlinedButton(
                 onClick = {
                     googleSignInLauncher.launch(googleSignInClient.signInIntent)
-                    onLoginSuccess()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -314,20 +326,28 @@ fun LoginScreen(
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 )
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_google_logo),
-                        contentDescription = "Google Logo",
-                        modifier = Modifier.size(24.dp)
+                if (authState is AuthState.Loading) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(24.dp),
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        "Continue with Google",
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_google_logo),
+                            contentDescription = "Google Logo",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "Continue with Google",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
 
