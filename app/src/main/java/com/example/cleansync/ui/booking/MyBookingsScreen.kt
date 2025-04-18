@@ -28,7 +28,6 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyBookingsScreen(
-    navController: NavController,
     bookingViewModel: BookingViewModel
 ) {
     val db = FirebaseFirestore.getInstance()

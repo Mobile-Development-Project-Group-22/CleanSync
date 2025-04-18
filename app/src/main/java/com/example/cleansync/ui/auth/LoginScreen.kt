@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,8 +28,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.R
 import com.example.cleansync.navigation.Screen
 import com.example.cleansync.ui.auth.AuthViewModel.AuthState
@@ -38,10 +37,12 @@ import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
-    navController: NavController,
     authViewModel: AuthViewModel = viewModel(),
-    onLoginSuccess: () -> Unit
-) {
+    onLoginSuccess: () -> Unit,
+    onNavigateToSignup: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit
+
+    ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf<String?>(null) }
@@ -64,6 +65,7 @@ fun LoginScreen(
             }
             is AuthState.SignupSuccess -> {
                 onLoginSuccess()
+
             }
             else -> {}
         }
@@ -225,7 +227,9 @@ fun LoginScreen(
 
             // Forgot Password
             TextButton(
-                onClick = { navController.navigate(Screen.PasswordResetScreen.route) },
+                onClick = {
+                    onNavigateToForgotPassword()
+                },
                 modifier = Modifier.align(Alignment.End)
             ) {
                 Text(
@@ -245,6 +249,7 @@ fun LoginScreen(
                         password.isBlank() -> passwordError = "Password is required"
                         else -> authViewModel.signIn(email, password)
                     }
+                    onLoginSuccess()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -275,7 +280,7 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.weight(1f),
                     thickness = 1.dp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
@@ -285,7 +290,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
-                Divider(
+                HorizontalDivider(
                     modifier = Modifier.weight(1f),
                     thickness = 1.dp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
@@ -298,6 +303,7 @@ fun LoginScreen(
             OutlinedButton(
                 onClick = {
                     googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    onLoginSuccess()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -337,10 +343,9 @@ fun LoginScreen(
                 )
                 TextButton(
                     onClick = {
-                        navController.navigate(Screen.SignupScreen.route) {
-                            popUpTo(Screen.LoginScreen.route) { inclusive = true }
-                        }
-                    }
+                        onNavigateToSignup()
+
+            }
                 ) {
                     Text(
                         "Sign Up",
@@ -365,9 +370,9 @@ fun String.isValidEmail(): Boolean {
 @Composable
 fun PreviewLoginScreen() {
     LoginScreen(
-        navController = rememberNavController(),
-        authViewModel = AuthViewModel(),
-        onLoginSuccess = {}
+        onLoginSuccess = {},
+        onNavigateToSignup = {},
+        onNavigateToForgotPassword = {}
     )
 }
 

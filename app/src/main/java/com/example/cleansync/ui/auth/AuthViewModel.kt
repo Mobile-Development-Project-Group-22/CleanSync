@@ -82,14 +82,18 @@ class AuthViewModel(
         viewModelScope.launch {
             val result = authManager.signInWithEmailAndPassword(email, password)
             result.fold(
-                onSuccess = { user ->
-                    if (user?.isEmailVerified == true) {
-                        _authState.value = AuthState.LoginSuccess(user)
-                    } else {
-                        _authState.value = AuthState.Error(
-                            "Please verify your email before logging in",
-                            ErrorType.LOGIN
-                        )
+                onSuccess = {
+                    it?.let { user ->
+                        if (user.isEmailVerified) {
+                            _authState.value = AuthState.LoginSuccess(user)
+                        } else {
+                            _authState.value = AuthState.Error(
+                                "Please verify your email first",
+                                ErrorType.LOGIN
+                            )
+                        }
+                    } ?: run {
+                        _authState.value = AuthState.Error("User not found", ErrorType.LOGIN)
                     }
                 },
                 onFailure = { error ->
@@ -111,8 +115,9 @@ class AuthViewModel(
             result.fold(
                 onSuccess = { user ->
                     user?.let {
-                        it.sendEmailVerification()
                         _authState.value = AuthState.SignupSuccess(it)
+                        // Optionally send email verification
+                        it.sendEmailVerification()
                     } ?: run {
                         _authState.value = AuthState.Error("User creation failed", ErrorType.SIGNUP)
                     }
@@ -153,6 +158,22 @@ class AuthViewModel(
             }
         }
     }
+
+    fun resendVerificationEmail() {
+        _authState.value = AuthState.Loading
+        viewModelScope.launch {
+            val result = authManager.resendEmailVerification(currentUser?.email ?: "")
+            result.fold(
+                onSuccess = {
+                    _authState.value = AuthState.Error("Verification email sent. Please check your inbox.", ErrorType.GENERAL)
+                },
+                onFailure = {
+                    _authState.value = AuthState.Error("Failed to send verification email", ErrorType.GENERAL)
+                }
+            )
+        }
+    }
+
 
     fun signOut() {
         authManager.signOut()

@@ -27,7 +27,7 @@ fun DeletePasswordDialog(
     errorMessage: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
-    showWarning: Boolean
+    showWarning: Boolean,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -62,7 +62,8 @@ fun DeletePasswordDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                enabled = !showWarning
+                enabled = !showWarning,
+
             ) {
                 Text("Delete Password")
             }

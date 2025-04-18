@@ -11,39 +11,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.data.model.Notification
-import com.example.cleansync.navigation.Screen
+import com.example.cleansync.navigation.BottomNavBar
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
-import com.example.cleansync.ui.profile.ProfileViewModel
 import com.example.cleansync.utils.NotificationUtils
+import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,
-    notificationViewModel: NotificationViewModel,
     authViewModel: AuthViewModel,
-    profileViewModel: ProfileViewModel
+    notificationViewModel: NotificationViewModel,
+    onNavigateToBooking: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onLogout: () -> Unit
 ) {
     val authState by authViewModel.authState.collectAsState()
     val currentUser = authViewModel.currentUser
     val showEmailVerificationDialog = remember { mutableStateOf(false) }
     val unreadCount = notificationViewModel.unreadNotificationsCount()
-    // Observe the notification state
-    val notificationState by notificationViewModel.notificationState.collectAsState()
-    // Check if the user is logged in
+    val context = LocalContext.current
+
+    // Check user session and email verification
     LaunchedEffect(authViewModel.isLoggedIn) {
         if (!authViewModel.isLoggedIn) {
-            navController.navigate(Screen.LoginScreen.route) {
-                popUpTo(Screen.HomeScreen.route) { inclusive = true }
-            }
+            authViewModel.signOut()
+            onLogout()
         } else if (!authViewModel.isEmailVerified) {
             showEmailVerificationDialog.value = true
         }
     }
 
+    // Show email verification prompt
     if (showEmailVerificationDialog.value) {
         AlertDialog(
             onDismissRequest = { showEmailVerificationDialog.value = false },
@@ -52,7 +54,7 @@ fun HomeScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        authViewModel.isEmailVerified
+                        authViewModel.resendVerificationEmail()
                         showEmailVerificationDialog.value = false
                     }
                 ) {
@@ -74,23 +76,24 @@ fun HomeScreen(
             HomeAppBar(
                 userName = currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User",
                 unreadCount = unreadCount,
-                onNotificationClick = { navController.navigate(Screen.NotificationScreen.route) },
-                onProfileClick = { navController.navigate(Screen.ProfileScreen.route) }
+                onNotificationClick = onNavigateToNotifications,
+                onProfileClick = onNavigateToProfile
             )
         },
         content = { innerPadding ->
             HomeContent(
                 modifier = Modifier.padding(innerPadding),
-                onBookingClick = { navController.navigate(Screen.BookingStartScreen.route) },
+                onBookingClick = onNavigateToBooking,
                 onLogoutClick = {
                     authViewModel.signOut()
-                    navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.HomeScreen.route) { inclusive = true }
-                    }
+                    onLogout()
                 },
-                onTestNotification = { sendTestNotification(notificationViewModel) }
+                onTestNotification = {
+                    sendTestNotification(notificationViewModel, context)
+                }
             )
-        }
+        },
+
     )
 }
 
@@ -115,7 +118,6 @@ private fun HomeAppBar(
             titleContentColor = MaterialTheme.colorScheme.onSurface
         ),
         actions = {
-            // Notification icon with badge
             BadgedBox(
                 badge = {
                     if (unreadCount > 0) {
@@ -127,16 +129,15 @@ private fun HomeAppBar(
             ) {
                 IconButton(onClick = onNotificationClick) {
                     Icon(
-                        Icons.Default.Notifications,
+                        imageVector = Icons.Default.Notifications,
                         contentDescription = "Notifications"
                     )
                 }
             }
 
-            // Profile icon
             IconButton(onClick = onProfileClick) {
                 Icon(
-                    Icons.Default.AccountCircle,
+                    imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Profile"
                 )
             }
@@ -151,7 +152,6 @@ private fun HomeContent(
     onLogoutClick: () -> Unit,
     onTestNotification: () -> Unit
 ) {
-    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -161,7 +161,6 @@ private fun HomeContent(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Primary action button
         FilledTonalButton(
             onClick = onBookingClick,
             modifier = Modifier
@@ -172,15 +171,8 @@ private fun HomeContent(
             Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
         }
 
-        // Secondary action button
         OutlinedButton(
-            onClick = {
-                NotificationUtils.sendCustomNotification(
-                    context = context,
-                    title = "Test Notification",
-                    message = "This is a test notification"
-                )
-            },
+            onClick = onTestNotification,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -191,7 +183,6 @@ private fun HomeContent(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Logout button
         TextButton(
             onClick = onLogoutClick,
             modifier = Modifier.fillMaxWidth()
@@ -207,13 +198,19 @@ private fun HomeContent(
     }
 }
 
-private fun sendTestNotification(viewModel: NotificationViewModel) {
+private fun sendTestNotification(viewModel: NotificationViewModel, context: android.content.Context) {
     viewModel.addNotification(
         Notification(
             userId = "test_user_id",
             message = "This is a test notification",
             read = false,
-            timestamp = com.google.firebase.Timestamp.now()
+            timestamp = Timestamp.now()
         )
+    )
+
+    NotificationUtils.sendCustomNotification(
+        context = context,
+        title = "Test Notification",
+        message = "This is a test notification"
     )
 }

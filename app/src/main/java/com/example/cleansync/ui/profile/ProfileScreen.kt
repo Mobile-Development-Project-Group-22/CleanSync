@@ -43,7 +43,8 @@ import com.google.firebase.auth.GoogleAuthProvider
 @Composable
 fun ProfileScreen(
     profileViewModel: ProfileViewModel,
-    navController: NavController
+    onNavigateToLogin : () -> Unit,
+    onLogout: () -> Unit,
 ) {
     val profileState = profileViewModel.profileState.collectAsState().value
     val currentUser = profileViewModel.currentUser
@@ -232,6 +233,23 @@ fun ProfileScreen(
             ) {
                 Text(text = "Delete Account", style = MaterialTheme.typography.labelLarge)
             }
+            Spacer(modifier = Modifier.height(16.dp))
+            // Logout Button
+            Button(
+                onClick = {
+                    profileViewModel.signOut()
+                    onLogout()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ),
+                shape = MaterialTheme.shapes.medium,
+                elevation = ButtonDefaults.buttonElevation(4.dp)
+            ) {
+                Text(text = "Logout", style = MaterialTheme.typography.labelLarge)
+            }
         }
 
         LaunchedEffect(profileState) {
@@ -241,7 +259,7 @@ fun ProfileScreen(
                 }
                 is ProfileState.Success -> {
                     if (profileState.user == null) {
-                        navController.navigate(Screen.LoginScreen.route)
+                        onNavigateToLogin()
                     } else {
                         Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_LONG).show()
                     }
@@ -359,11 +377,6 @@ fun ProfileScreen(
                                 "Account deleted successfully",
                                 Toast.LENGTH_LONG
                             ).show()
-                            navController.navigate(Screen.LoginScreen.route) {
-                                popUpTo(Screen.ProfileScreen.route) {
-                                    inclusive = true
-                                }
-                            }
                         },
                         context = context,
                         onFailure = { error ->
@@ -371,6 +384,7 @@ fun ProfileScreen(
                         }
                     )
                     showDeleteDialog = false
+                    onNavigateToLogin()
                 },
                 isLoading = CircularProgressIndicator()
             )
