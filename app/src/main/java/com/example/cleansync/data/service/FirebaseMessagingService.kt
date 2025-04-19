@@ -26,48 +26,46 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId == null) {
+            Log.w("MyFirebaseService", "User not authenticated, skipping notification save")
+            return
+        }
 
         val message = remoteMessage.notification?.body ?: remoteMessage.data["message"] ?: "You have a new message"
 
         // Log the message for debugging purposes
         Log.d("MyFirebaseService", "Message received: Message=$message")
 
-        // Save the notificatxion to Firestore
-        saveNotificationToFirestore(message,
-            message,
-
-        )
+        // Save the notification to Firestore for the authenticated user
+        saveNotificationToFirestore(userId, message)
 
         // Broadcast the notification data to update the ViewModel (if required in your architecture)
         val intent = Intent("com.example.cleansync.NOTIFICATION").apply {
-
             putExtra("message", message)
         }
         sendBroadcast(intent)
 
-        // Send the notification directly to the system tray
-        sendNotification(message,
-            message)
+        // Send the notification directly to the system tray for the user
+        sendNotification(message)
     }
 
-    // Implement onNewToken to observe token changes
     override fun onNewToken(token: String) {
         super.onNewToken(token)
 
         // Log the new token for debugging purposes
         Log.d("MyFirebaseService", "New FCM Token: $token")
 
-        // Optionally, you can send this token to your server to associate it with the user/device
+        // Send the token to the server (implement logic)
         sendTokenToServer(token)
     }
 
-    // Function to send the new token to your server (if required)
     private fun sendTokenToServer(token: String) {
-        // Implement your logic to save the token to Firestore or a server
+        // Implement your logic to save the token to Firestore or your server
         Log.d("MyFirebaseService", "Token sent to the server: $token")
     }
 
-    private fun sendNotification(title: String, message: String) {
+    private fun sendNotification(message: String) {
         val channelId = "cleansync_notifications"
         val notificationId = UUID.randomUUID().toString()
 
@@ -83,21 +81,20 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         )
 
         // Set custom vibration pattern
-        var vibrationPattern = longArrayOf(0, 200, 100, 200)
+        val vibrationPattern = longArrayOf(0, 200, 100, 200)
 
         // Build the notification with custom sound and vibration
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
+            .setContentTitle("New Message") // Set title as fixed or dynamic
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setVibrate(vibrationPattern)
-            .setSound(Uri.parse("android.resource://$packageName/raw/custom_sound"))  // Set a custom sound
+            .setSound(Uri.parse("android.resource://$packageName/raw/custom_sound"))
 
-        val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         // For Android O+, create NotificationChannel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -107,7 +104,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             ).apply {
                 description = "Notifications for CleanSync"
                 enableVibration(true)
-                vibrationPattern = vibrationPattern
             }
             notificationManager.createNotificationChannel(channel)
         }
@@ -116,14 +112,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         notificationManager.notify(notificationId.hashCode(), notificationBuilder.build())
     }
 
-    private fun saveNotificationToFirestore(title: String, message: String) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: run {
-            Log.w("MyFirebaseService", "User not authenticated, skipping notification save")
-            return
-        }
-
+    private fun saveNotificationToFirestore(userId: String, message: String) {
         val notification = Notification(
-            userId = userId,
+            userId = userId,  // Ensure the notification is tied to the authenticated user
             message = message,
             read = false,
             timestamp = Timestamp.now()
@@ -131,12 +122,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         db.collection("notifications")
             .add(notification)
-            .addOnSuccessListener {
-                Log.d("MyFirebaseService", "Notification saved to Firestore")
+            .addOnSuccessListener { documentReference ->
+                // Setting the ID of the notification once it is saved
+                val updatedNotification = notification.copy(id = documentReference.id)
+                Log.d("MyFirebaseService", "Notification saved to Firestore with ID: ${updatedNotification.id}")
             }
             .addOnFailureListener { e ->
                 Log.e("MyFirebaseService", "Error saving notification to Firestore", e)
             }
     }
-
 }
