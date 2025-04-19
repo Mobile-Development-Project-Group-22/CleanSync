@@ -17,6 +17,9 @@ import com.example.cleansync.ui.auth.SignupScreen
 import com.example.cleansync.ui.home.HomeScreen
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.auth.PasswordResetScreen
+import com.example.cleansync.ui.booking.BookingConfirmationScreen
+import com.example.cleansync.ui.booking.BookingFormScreen
+import com.example.cleansync.ui.booking.BookingStartScreen
 import com.example.cleansync.ui.booking.MyBookingsScreen
 import com.example.cleansync.ui.notifications.NotificationScreen
 import com.example.cleansync.ui.notifications.NotificationViewModel
@@ -170,6 +173,38 @@ fun AppNavHost(
         composable(Screen.MyBookingsScreen.route) {
             MyBookingsScreen(
                 bookingViewModel = viewModel(),
+            )
+        }
+
+        composable(Screen.BookingStartScreen.route) {
+            BookingStartScreen(
+                bookingViewModel = viewModel(),
+                onBookingConfirmed = {
+                    navController.navigate(Screen.BookingFormScreen.route)
+                },
+                onBookingCancelled = {
+                    navController.navigate(Screen.MyBookingsScreen.route)
+                }
+            )
+        }
+        composable(Screen.BookingConfirmationScreen.route) {
+            BookingConfirmationScreen(
+                bookingViewModel = viewModel(),
+                onReturnHome = {
+                    navController.navigate(Screen.HomeScreen.route) {
+                        popUpTo(Screen.BookingStartScreen.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(Screen.BookingFormScreen.route) {
+            BookingFormScreen(
+                bookingViewModel = viewModel(),
+                onBookingDone = {
+                    navController.navigate(Screen.BookingConfirmationScreen.route) {
+                        popUpTo(Screen.BookingFormScreen.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(Screen.ProfileScreen.route) {
