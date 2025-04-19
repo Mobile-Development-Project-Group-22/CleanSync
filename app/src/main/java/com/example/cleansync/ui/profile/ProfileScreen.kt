@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -18,6 +17,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -35,20 +36,26 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.example.cleansync.navigation.Screen
+import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.google.firebase.auth.GoogleAuthProvider
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     profileViewModel: ProfileViewModel,
+    preferencesViewModel: NotificationSettingsViewModel,
     onNavigateToLogin : () -> Unit,
     onLogout: () -> Unit,
+    onThemeToggle: (Boolean) -> Unit
 ) {
     val profileState = profileViewModel.profileState.collectAsState().value
+    val preferencesState = preferencesViewModel.preferences.collectAsState().value
+
     val currentUser = profileViewModel.currentUser
     val context = LocalContext.current
+
+    var isDarkMode by remember { mutableStateOf(false) }
 
     // States for dialogs and preferences
     var showUpdateProfileDialog by remember { mutableStateOf(false) }
@@ -69,6 +76,11 @@ fun ProfileScreen(
         it.providerId == "password"
     } == true
 
+
+    LaunchedEffect(Unit) {
+        // Load user preferences
+        preferencesViewModel.loadPreferences()
+    }
     // Check if user is logged in via Google
     val isGoogleSignIn = currentUser?.providerData?.any {
         it.providerId == GoogleAuthProvider.PROVIDER_ID
@@ -94,9 +106,9 @@ fun ProfileScreen(
                     textAlign = TextAlign.Center,
                 )
             },
-            colors = TopAppBarDefaults.smallTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = Color.White
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -167,6 +179,33 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
+            // Dark Mode Toggle
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Dark Mode",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = isDarkMode,
+                    onCheckedChange = {
+                        isDarkMode = it
+                        onThemeToggle(it)
+                                      },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
+
             // Language Selector
             LanguageSelector(
                 selectedLanguage = "en",
@@ -190,13 +229,26 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            NotificationPreferences(
-                emailNotificationsEnabled = true,
-                pushNotificationsEnabled = true,
-                onEmailNotificationsChanged = { /* Handle email notifications change */ },
-                onPushNotificationsChanged = { /* Handle push notifications change */ }
-
+            NotificationPreferencesScreen(
+                preferences = preferencesState,
+                onEmailChange = { email ->
+                    preferencesViewModel.updatePreference(email = email)
+                    Toast.makeText(
+                        context,
+                        if (email) "Email notifications enabled" else "Email notifications disabled",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
+                onPushChange = { push ->
+                    preferencesViewModel.updatePreference(push = push)
+                    Toast.makeText(
+                        context,
+                        if (push) "Push notifications enabled" else "Push notifications disabled",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             )
+
 
 //            // add password
 //            Button(

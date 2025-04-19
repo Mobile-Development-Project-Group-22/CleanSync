@@ -22,13 +22,15 @@ import com.example.cleansync.ui.booking.BookingFormScreen
 import com.example.cleansync.ui.booking.BookingStartScreen
 import com.example.cleansync.ui.booking.MyBookingsScreen
 import com.example.cleansync.ui.notifications.NotificationScreen
+import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
 
 @Composable
 fun CleanSyncApp(
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    onThemeToggle: (Boolean) -> Unit
 ) {
     val notificationViewModel = NotificationViewModel()
     val navController = rememberNavController()
@@ -36,7 +38,8 @@ fun CleanSyncApp(
     MainScreen(
         navController = navController,
         authViewModel = authViewModel,
-        notificationViewModel = notificationViewModel
+        notificationViewModel = notificationViewModel,
+        onThemeToggle = onThemeToggle
     )
 }
 
@@ -44,7 +47,8 @@ fun CleanSyncApp(
 fun MainScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
-    notificationViewModel: NotificationViewModel
+    notificationViewModel: NotificationViewModel,
+    onThemeToggle: (Boolean) -> Unit
 ) {
     val unreadCount = notificationViewModel.unreadNotificationsCount()
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
@@ -71,7 +75,8 @@ fun MainScreen(
             navController = navController,
             authViewModel = authViewModel,
             notificationViewModel = notificationViewModel,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            onThemeToggle = onThemeToggle
         )
     }
 }
@@ -84,7 +89,8 @@ fun AppNavHost(
     navController: NavHostController,
     authViewModel: AuthViewModel,
     notificationViewModel: NotificationViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onThemeToggle: (Boolean) -> Unit
 ) {
     NavHost(
         navController = navController,
@@ -210,6 +216,7 @@ fun AppNavHost(
         composable(Screen.ProfileScreen.route) {
             ProfileScreen(
                 profileViewModel= ProfileViewModel(),
+                preferencesViewModel= NotificationSettingsViewModel(),
                 onLogout = {
                     authViewModel.signOut()
                     navController.navigate(Screen.LoginScreen.route) {
@@ -221,6 +228,8 @@ fun AppNavHost(
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 },
+                onThemeToggle = onThemeToggle
+
             )
         }
 
