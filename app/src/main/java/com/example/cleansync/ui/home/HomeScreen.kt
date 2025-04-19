@@ -88,9 +88,6 @@ fun HomeScreen(
                     authViewModel.signOut()
                     onLogout()
                 },
-                onTestNotification = {
-                    sendTestNotification(notificationViewModel, context)
-                }
             )
         },
 
@@ -150,8 +147,8 @@ private fun HomeContent(
     modifier: Modifier = Modifier,
     onBookingClick: () -> Unit,
     onLogoutClick: () -> Unit,
-    onTestNotification: () -> Unit
 ) {
+    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -172,7 +169,15 @@ private fun HomeContent(
         }
 
         OutlinedButton(
-            onClick = onTestNotification,
+            onClick ={
+                NotificationUtils.triggerNotification(
+                    context = context,
+                    title = "Test Notification",
+                    message = "This is a test notification",
+                    read = false,
+                    scheduleTimeMillis = null
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -198,19 +203,6 @@ private fun HomeContent(
     }
 }
 
-private fun sendTestNotification(viewModel: NotificationViewModel, context: android.content.Context) {
-    viewModel.addNotification(
-        Notification(
-            userId = "test_user_id",
-            message = "This is a test notification",
-            read = false,
-            timestamp = Timestamp.now()
-        )
-    )
 
-    NotificationUtils.sendCustomNotification(
-        context = context,
-        title = "Test Notification",
-        message = "This is a test notification"
-    )
-}
+
+
