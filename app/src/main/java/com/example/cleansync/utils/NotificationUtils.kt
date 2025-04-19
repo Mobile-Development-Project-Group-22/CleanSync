@@ -26,6 +26,34 @@ object NotificationUtils {
     private const val TAG = "NotificationUtils" // Log tag for easier identification in Logcat
 
     /**
+     * Trigger a notification, either immediately or scheduled.
+     *
+     * @param context The context from which the notification is triggered.
+     * @param title The title of the notification.
+     * @param message The message of the notification.
+     * @param scheduleTimeMillis Optional. If provided, the notification will be scheduled for this time.
+     */
+    fun triggerNotification(
+        context: Context,
+        title: String,
+        message: String,
+        read: Boolean = false,
+        scheduleTimeMillis: Long? = null
+    ) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+
+        // Save to Firestore
+        saveNotificationToFirestore(userId, message)
+
+        // Send or Schedule
+        if (scheduleTimeMillis != null) {
+            scheduleLocalNotification(context, title, message, scheduleTimeMillis)
+        } else {
+            sendCustomNotification(context, title, message)
+        }
+    }
+
+    /**
      * Send a custom push notification.
      */
     fun sendCustomNotification(context: Context, title: String, message: String) {

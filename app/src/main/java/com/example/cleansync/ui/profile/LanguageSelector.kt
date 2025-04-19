@@ -63,14 +63,14 @@ fun LanguageSelector(
                     // Log before sending notification
                     Log.d("LanguageSelector", "Sending notification for language change: $newLanguage")
 
-                    NotificationUtils.sendCustomNotification(
-                        context,
-                        "Language Changed",
-                        "You have successfully changed the language to $newLanguage"
+                    // Send notification
+                    NotificationUtils.triggerNotification(
+                        context = context,
+                        title = "Language Changed",
+                        message = "Your language has been changed to $newLanguage",
+                        read = false
                     )
-
-                    NotificationUtils.saveNotificationToFirestore(userId, "You have successfully changed the language to English")
-                    onButtonClicked() // Call the button click event
+              onButtonClicked() // Call the button click event
                 },
                 modifier = Modifier.padding(start = 8.dp)
             ) {
