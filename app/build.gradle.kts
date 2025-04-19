@@ -117,7 +117,8 @@ dependencies {
     implementation("androidx.compose.material:material:1.7.8") // or latest
     implementation("com.google.accompanist:accompanist-swiperefresh:0.31.5-beta") // or latest
 
-
+// data store
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Testing
     testImplementation(libs.junit)
