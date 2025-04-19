@@ -90,7 +90,7 @@ fun ProfilePictureSection(
         Text(
             text = user?.displayName ?: "User Name",
             style = MaterialTheme.typography.titleLarge,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.clickable { showNameDialog = true }

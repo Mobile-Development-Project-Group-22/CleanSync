@@ -2,33 +2,11 @@ package com.example.cleansync.ui.profile
 
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,13 +17,12 @@ import androidx.compose.ui.unit.sp
 import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.google.firebase.auth.GoogleAuthProvider
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     profileViewModel: ProfileViewModel,
     preferencesViewModel: NotificationSettingsViewModel,
-    onNavigateToLogin : () -> Unit,
+    onNavigateToLogin: () -> Unit,
     onLogout: () -> Unit,
     onThemeToggle: (Boolean) -> Unit
 ) {
@@ -76,11 +53,11 @@ fun ProfileScreen(
         it.providerId == "password"
     } == true
 
-
     LaunchedEffect(Unit) {
         // Load user preferences
         preferencesViewModel.loadPreferences()
     }
+
     // Check if user is logged in via Google
     val isGoogleSignIn = currentUser?.providerData?.any {
         it.providerId == GoogleAuthProvider.PROVIDER_ID
@@ -107,7 +84,7 @@ fun ProfileScreen(
                 )
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = MaterialTheme.colorScheme.onSurface
             ),
             modifier = Modifier
@@ -131,7 +108,6 @@ fun ProfileScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
 
             // Show password status only if user has password provider
             if (hasPasswordProvider) {
@@ -194,23 +170,25 @@ fun ProfileScreen(
                     onCheckedChange = {
                         isDarkMode = it
                         onThemeToggle(it)
-                                      },
+                    },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.primary,
-                        uncheckedThumbColor = MaterialTheme.colorScheme.onSurface
+                        checkedThumbColor = MaterialTheme.colorScheme.background,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
 
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Language Selector
             LanguageSelector(
                 selectedLanguage = "en",
-                        onLanguageSelected = { language ->
-//                    profilexViewModel.updateLanguage(language)
+                onLanguageSelected = { language ->
+                    Toast.makeText(
+                        context,
+                        "Language changed to $language",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 },
                 expanded = false,
                 onExpandedChange = {
@@ -224,11 +202,11 @@ fun ProfileScreen(
                         Toast.LENGTH_SHORT
                     ).show()
                 },
-
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Notification Preferences
             NotificationPreferencesScreen(
                 preferences = preferencesState,
                 onEmailChange = { email ->
@@ -249,27 +227,6 @@ fun ProfileScreen(
                 }
             )
 
-
-//            // add password
-//            Button(
-//                onClick = {
-//                    if (!isGoogleSignIn) {
-//                        showAddPasswordDialog = true
-//                    } else {
-//                        Toast.makeText(context, "No password provider found", Toast.LENGTH_SHORT).show()
-//                    }
-//                },
-//                modifier = Modifier.fillMaxWidth(),
-//                colors = ButtonDefaults.buttonColors(
-//                    containerColor = MaterialTheme.colorScheme.primary,
-//                    contentColor = Color.White
-//                ),
-//                shape = MaterialTheme.shapes.medium,
-//                elevation = ButtonDefaults.buttonElevation(4.dp)
-//            ) {
-//                Text(text = "Add Password", style = MaterialTheme.typography.labelLarge)
-//            }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Delete Account Button
@@ -286,6 +243,7 @@ fun ProfileScreen(
                 Text(text = "Delete Account", style = MaterialTheme.typography.labelLarge)
             }
             Spacer(modifier = Modifier.height(16.dp))
+
             // Logout Button
             Button(
                 onClick = {
@@ -322,6 +280,7 @@ fun ProfileScreen(
             }
         }
 
+        // Dialogs for password change, delete, etc.
 
         // Change Password Dialog
         if (showChangePasswordDialog) {
@@ -354,19 +313,7 @@ fun ProfileScreen(
             )
         }
 
-        var showPasswordDialog by remember { mutableStateOf(false) }
-
-        if (showPasswordDialog) {
-            AddPasswordDialog(
-                onAddPassword = { password ->
-                    // handle password submission
-                    showPasswordDialog = false
-                },
-                onDismiss = { showPasswordDialog = false }
-            )
-        }
-
-        // add password dialog
+        // Add Password Dialog
         if (showAddPasswordDialog) {
             AddPasswordDialog(
                 onAddPassword = { password ->
@@ -384,7 +331,6 @@ fun ProfileScreen(
                 onDismiss = { showAddPasswordDialog = false }
             )
         }
-
 
         // Delete Password Dialog
         if (showDeletePasswordDialog) {
@@ -408,7 +354,6 @@ fun ProfileScreen(
                 showWarning = !hasPasswordProvider
             )
         }
-
 
         // Delete Account Dialog
         if (showDeleteDialog) {
@@ -441,6 +386,5 @@ fun ProfileScreen(
                 isLoading = CircularProgressIndicator()
             )
         }
-
     }
 }
