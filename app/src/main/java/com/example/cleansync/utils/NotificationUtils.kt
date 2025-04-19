@@ -18,34 +18,41 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 
+
+
 object NotificationUtils {
 
     private const val CHANNEL_ID = "cleansync_notifications"
     private const val CHANNEL_NAME = "CleanSync Notifications"
-
-    private const val TAG = "NotificationUtils" // Log tag for easier identification in Logcat
+    private const val TAG = "NotificationUtils"
 
     /**
-     * Trigger a notification, either immediately or scheduled.
-     *
-     * @param context The context from which the notification is triggered.
-     * @param title The title of the notification.
-     * @param message The message of the notification.
-     * @param scheduleTimeMillis Optional. If provided, the notification will be scheduled for this time.
+     * Trigger a notification and optionally schedule it. Saves to Firestore if the user is authenticated.
      */
     fun triggerNotification(
         context: Context,
         title: String,
         message: String,
         read: Boolean = false,
-        scheduleTimeMillis: Long? = null
+        scheduleTimeMillis: Long? = null,
+        email: String? = null,
+        isForgotPassword: Boolean = false  // added flag for password reset
     ) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        // If it's a forgot password notification, save it to Firestore without checking auth state
+        if (isForgotPassword) {
+            // Save to Firestore for tracking purposes without checking auth state
+            saveNotificationToFirestore(null, message)  // No userId needed for this case
+        } else {
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
 
-        // Save to Firestore
-        saveNotificationToFirestore(userId, message)
+            // Only save to Firestore if user is authenticated
+            if (!userId.isNullOrEmpty()) {
+                saveNotificationToFirestore(userId, message)
+            } else {
+                Log.w(TAG, "User not authenticated; skipping Firestore save for regular notification.")
+            }
+        }
 
-        // Send or Schedule
         if (scheduleTimeMillis != null) {
             scheduleLocalNotification(context, title, message, scheduleTimeMillis)
         } else {
@@ -54,10 +61,10 @@ object NotificationUtils {
     }
 
     /**
-     * Send a custom push notification.
+     * Send a custom notification immediately.
      */
     fun sendCustomNotification(context: Context, title: String, message: String) {
-        Log.d(TAG, "Sending custom notification with title: $title, message: $message")
+        Log.d(TAG, "Sending notification: $title - $message")
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -81,23 +88,15 @@ object NotificationUtils {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannelIfNeeded(manager)
 
-        // Issue the notification with a unique ID
-        val notificationId = UUID.randomUUID().hashCode()
-        manager.notify(notificationId, builder.build())
-
-        Log.d(TAG, "Notification sent with ID: $notificationId")
+        manager.notify(UUID.randomUUID().hashCode(), builder.build())
+        Log.d(TAG, "Notification sent.")
     }
 
     /**
-     * Schedule a local notification at a specific time.
+     * Schedule a notification for a specific time.
      */
-    fun scheduleLocalNotification(context: Context, title: String, message: String, timeInMillis: Long?) {
-        if (timeInMillis == null) {
-            Log.e(TAG, "Time in millis is null, cannot schedule notification.")
-            return
-        }
-
-        Log.d(TAG, "Scheduling local notification with title: $title, message: $message, at time: $timeInMillis")
+    fun scheduleLocalNotification(context: Context, title: String, message: String, timeInMillis: Long) {
+        Log.d(TAG, "Scheduling notification: $title at $timeInMillis")
 
         val intent = Intent(context, LocalNotificationReceiver::class.java).apply {
             putExtra("title", title)
@@ -115,22 +114,28 @@ object NotificationUtils {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
 
-        Log.d(TAG, "Notification scheduled at time: $timeInMillis")
+        Log.d(TAG, "Notification scheduled.")
     }
 
     /**
-     * Save the notification to Firestore.
+     * Save the notification to Firestore for a user.
      */
     fun saveNotificationToFirestore(userId: String?, message: String) {
-        if (userId.isNullOrEmpty()) {
-            Log.w(TAG, "User ID is null or empty. Notification not saved.")
+        // If userId is null, it might be a password reset, so we need to check
+        val email = FirebaseAuth.getInstance().currentUser?.email
+
+        // If both userId and email are null, don't save the notification
+        if (userId.isNullOrEmpty() && email.isNullOrEmpty()) {
+            Log.w(TAG, "Both user ID and email are null or empty. Notification not saved.")
             return
         }
 
-        Log.d(TAG, "Saving notification to Firestore for user: $userId")
+        val notificationUserId = userId ?: email // Use email as a fallback if user is not authenticated
+
+        Log.d(TAG, "Saving notification to Firestore for user: $notificationUserId")
 
         val notification = Notification(
-            userId = userId,
+            userId = notificationUserId ?: "",
             message = message,
             read = false,
             timestamp = Timestamp.now()
@@ -147,7 +152,7 @@ object NotificationUtils {
     }
 
     /**
-     * Create a notification channel if it doesn't exist (required for Android O and above).
+     * Create the notification channel (Android O+).
      */
     private fun createChannelIfNeeded(manager: NotificationManager) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -158,7 +163,7 @@ object NotificationUtils {
                 enableVibration(true)
             }
             manager.createNotificationChannel(channel)
-            Log.d(TAG, "Notification channel created or already exists.")
+            Log.d(TAG, "Notification channel created.")
         }
     }
 }

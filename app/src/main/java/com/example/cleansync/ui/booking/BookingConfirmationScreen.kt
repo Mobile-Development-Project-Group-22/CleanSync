@@ -81,11 +81,11 @@ fun BookingConfirmationScreen(
                         ?.minusMinutes(60)
                         ?.toEpochMillis()
 
-                    NotificationUtils.scheduleLocalNotification(
+                    NotificationUtils.triggerNotification(
                         context = context,
                         title = "Booking Reminder",
                         message = "Your booking is in 1 hour!",
-                        timeInMillis = millis
+                        scheduleTimeMillis = millis
                     )
                 }
 
