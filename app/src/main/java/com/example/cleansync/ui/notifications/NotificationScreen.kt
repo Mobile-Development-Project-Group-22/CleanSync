@@ -1,64 +1,75 @@
 package com.example.cleansync.ui.notifications
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.cleansync.ui.theme.CleanSyncTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleansync.data.model.Notification
+import com.google.firebase.auth.FirebaseAuth
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationScreen(
-    viewModel: NotificationViewModel
-) {
-    // Collecting the state from ViewModel
-    val notificationState = viewModel.notificationState.collectAsState()
-    val errorMessage = viewModel.errorMessage.collectAsState()
+fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
+    val notifications by viewModel.notificationState.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    // Show error message if it exists
-    errorMessage.value?.let { error ->
-        Text(
-            text = error,
-            color = MaterialTheme.colorScheme.error,
-            modifier = Modifier.padding(16.dp),
-        )
+
+    LaunchedEffect(Unit) {
+        if (FirebaseAuth.getInstance().currentUser != null) {
+        viewModel.refreshNotifications()
+        }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        // Title Section
-        Text(
-            text = "Notifications",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        // Display a loading message if notifications are empty
-        if (notificationState.value.isEmpty()) {
-            Text(
-                text = "No notifications",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Notifications") },
+                actions = {
+                    TextButton(onClick = { viewModel.clearAllNotifications() }) {
+                        Text("Clear All", color = Color.White)
+                    }
+                }
             )
-        } else {
-            // Display the list of notifications
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(notificationState.value) { notification ->
-                    NotificationItem(notification, viewModel)
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            errorMessage?.let { msg ->
+                ErrorBanner(message = msg, onDismiss = viewModel::clearErrorMessage)
+            }
+
+            if (notifications.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No notifications available")
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(8.dp)
+                ) {
+                    items(notifications) { notification ->
+                        NotificationItem(
+                            notification = notification,
+                            onToggleRead = { viewModel.toggleReadStatus(notification) },
+                            onRemove = { viewModel.removeNotification(notification) }
+                        )
+                    }
                 }
             }
         }
@@ -66,65 +77,61 @@ fun NotificationScreen(
 }
 
 @Composable
-fun NotificationItem(notification: Notification, viewModel: NotificationViewModel) {
-    val backgroundColor = if (notification.read) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
-
+fun NotificationItem(
+    notification: Notification,
+    onToggleRead: () -> Unit,
+    onRemove: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .background(backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable { onToggleRead() },
+        colors = CardDefaults.cardColors(
+            containerColor = if (notification.read) Color.LightGray else MaterialTheme.colorScheme.primaryContainer
+        )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
+        Column(modifier = Modifier.padding(16.dp)) {
+//            Text(
+//                text = notification.title ?: "No title",
+//                fontWeight = if (!notification.read) FontWeight.Bold else FontWeight.Normal,
+//                style = MaterialTheme.typography.titleMedium
+//            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = notification.message ?: "No message",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
             ) {
-                Text(text = notification.message, style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Received: ${notification.timestamp?.toDate()?.toString() ?: "N/A"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Action buttons: Mark as Read / Remove
-            Column(horizontalAlignment = Alignment.End) {
-                // Mark as Read button
-                if (!notification.read) {
-                    Button(
-                        onClick = { viewModel.markNotificationAsRead(notification) },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    ) {
-                        Text("Mark as Read", color = MaterialTheme.colorScheme.onPrimary)
-                    }
-                }
-
-                // Remove button
-                Button(
-                    onClick = { viewModel.removeNotification(notification) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                ) {
-                    Text("Remove", color = MaterialTheme.colorScheme.onError)
+                TextButton(onClick = onRemove) {
+                    Text("Remove")
                 }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun NotificationScreenPreview() {
-    CleanSyncTheme {
-      NotificationScreen(
-            viewModel = NotificationViewModel()
-      )
+fun ErrorBanner(message: String, onDismiss: () -> Unit) {
+    Surface(
+        color = Color.Red,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = message, color = Color.White)
+            Spacer(modifier = Modifier.width(8.dp))
+            TextButton(onClick = onDismiss) {
+                Text("Dismiss", color = Color.White)
+            }
+        }
     }
 }

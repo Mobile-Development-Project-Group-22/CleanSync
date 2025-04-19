@@ -49,6 +49,8 @@
             </intent-filter>
         </service>
 
+        <!-- 🔹 Firebase Instance ID Service -->
+
         <receiver android:name=".data.service.LocalNotificationReceiver" />
 
     </application>

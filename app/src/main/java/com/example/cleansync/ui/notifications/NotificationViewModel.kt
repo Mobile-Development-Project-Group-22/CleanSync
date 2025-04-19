@@ -1,11 +1,9 @@
 package com.example.cleansync.ui.notifications
 
-import android.R.id
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.cleansync.data.model.Notification
 import com.google.firebase.auth.FirebaseAuth
-
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
@@ -16,154 +14,134 @@ class NotificationViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val notificationsRef = db.collection("notifications")
+    private val auth = FirebaseAuth.getInstance()
 
-    // Use a StateFlow to hold the list of notifications
     private val _notificationState = MutableStateFlow<List<Notification>>(emptyList())
     val notificationState: StateFlow<List<Notification>> get() = _notificationState
 
-
-    // Add an error state for UI updates
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> get() = _errorMessage
 
     init {
-        fetchNotificationsFromFirestore()
-        subscribeToNotifications()
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+            val user = auth.currentUser
+            if (user != null) {
+                Log.d("NotificationVM", "Auth restored, fetching notifications")
+                subscribeToNotifications()
+                fetchNotifications()
+            } else {
+                Log.w("NotificationVM", "Auth not yet available")
+            }
+        }
     }
 
-    // Subscribe to notifications using Firebase Cloud Messaging
     private fun subscribeToNotifications() {
         FirebaseMessaging.getInstance().subscribeToTopic("notifications")
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    Log.d("NotificationViewModel", "Subscribed to notifications topic")
+                    Log.d("NotificationVM", "Subscribed to notifications topic")
                 } else {
-                    Log.e("NotificationViewModel", "Failed to subscribe to notifications topic")
+                    Log.e("NotificationVM", "Subscription failed", task.exception)
                 }
             }
     }
 
-    private fun fetchNotificationsFromFirestore() {
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+    private fun fetchNotifications() {
+        val currentUser = auth.currentUser
+        if (currentUser == null) {
             _errorMessage.value = "User not authenticated"
-            Log.e("NotificationViewModel", "User not authenticated")
             return
         }
 
-        Log.d("NotificationViewModel", "Fetching notifications for user: $currentUserId")
-
         notificationsRef
-            .whereEqualTo("userId", currentUserId)
+            .whereEqualTo("userId", currentUser.uid)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    _errorMessage.value = "Error fetching notifications"
-                    Log.e("NotificationViewModel", "Fetch error: ${error.message}")
+
+
+                if (snapshot == null || snapshot.isEmpty) {
+                    _notificationState.value = emptyList()
+                    Log.d("NotificationVM", "No notifications found")
                     return@addSnapshotListener
                 }
 
-                Log.d("NotificationViewModel", "Received snapshot with ${snapshot?.size()} documents")
-
-                val notifications = snapshot?.documents?.mapNotNull { doc ->
+                val notifications = snapshot.documents.mapNotNull { doc ->
                     try {
-                        doc.toObject(Notification::class.java)?.copy(id = doc.id).also {
-                            Log.d("NotificationViewModel", "Parsed notification: ${it?.message}")
-                        }
+                        doc.toObject(Notification::class.java)?.copy(id = doc.id)
                     } catch (e: Exception) {
-                        Log.e("NotificationViewModel", "Parse error for doc ${doc.id}", e)
+                        Log.e("NotificationVM", "Error parsing notification ${doc.id}", e)
                         null
                     }
-                } ?: emptyList()
+                }
 
-                Log.d("NotificationViewModel", "Fetched ${notifications.size} notifications")
                 _notificationState.value = notifications
             }
     }
 
     fun addNotification(notification: Notification) {
-        notificationsRef.add(notification)
-            .addOnSuccessListener { documentReference ->
-                Log.d("NotificationViewModel", "Notification added with ID: ${documentReference.id}")
-            }
-            .addOnFailureListener { e ->
-                _errorMessage.value = "Error adding notification"
-                Log.e("NotificationViewModel", "Error adding notification", e)
-            }
+        auth.currentUser?.uid?.let { uid ->
+            val withUser = notification.copy(userId = uid)
+            notificationsRef.add(withUser)
+                .addOnSuccessListener {
+                    Log.d("NotificationVM", "Notification added: ${it.id}")
+                }
+                .addOnFailureListener {
+                    _errorMessage.value = "Error adding notification"
+                    Log.e("NotificationVM", "Add error", it)
+                }
+        } ?: run {
+            _errorMessage.value = "User not authenticated"
+        }
     }
-    // Mark notification as read
+
+    fun toggleReadStatus(notification: Notification) {
+        updateNotificationField(notification, "read", !notification.read)
+    }
+
     fun markNotificationAsRead(notification: Notification) {
-        notificationsRef.document(notification.id)
-            .update("read", true) // Ensure 'read' is used here instead of 'isRead'
-            .addOnSuccessListener {
-                Log.d("NotificationViewModel", "Notification marked as read successfully.")
-            }
-            .addOnFailureListener { e ->
-                _errorMessage.value = "Error marking notification as read"
-                Log.e("NotificationViewModel", "Error marking notification as read", e)
-            }
+        updateNotificationField(notification, "read", true)
     }
 
-    // Remove a notification
     fun removeNotification(notification: Notification) {
-        notificationsRef.document(notification.id)
-            .delete()
-            .addOnSuccessListener {
-                // Handle UI updates
-                Log.d("NotificationViewModel", "Notification removed successfully.")
-            }
-            .addOnFailureListener { e ->
-                _errorMessage.value = "Error removing notification"
-                Log.e("NotificationViewModel", "Error removing notification", e)
-            }
+        updateNotificationIfAuthorized(notification) {
+            notificationsRef.document(notification.id).delete()
+        }
     }
 
-
-    // Clear all notifications for the current user
     fun clearAllNotifications() {
-        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        notificationsRef.whereEqualTo("userId", currentUserId)
-            .get()
-            .addOnSuccessListener { documents ->
-                for (document in documents) {
-                    notificationsRef.document(document.id).delete()
-                        .addOnSuccessListener {
-                            Log.d("NotificationViewModel", "Notification cleared successfully.")
-                        }
-                        .addOnFailureListener { e ->
-                            _errorMessage.value = "Error clearing notification"
-                            Log.e("NotificationViewModel", "Error clearing notification", e)
-                        }
+        val uid = auth.currentUser?.uid ?: return
+        notificationsRef.whereEqualTo("userId", uid).get()
+            .addOnSuccessListener { snapshot ->
+                snapshot.documents.forEach { doc ->
+                    notificationsRef.document(doc.id).delete()
                 }
             }
-            .addOnFailureListener { e ->
-                _errorMessage.value = "Error fetching notifications to clear"
-                Log.e("NotificationViewModel", "Error fetching notifications to clear", e)
+            .addOnFailureListener {
+                _errorMessage.value = "Error clearing notifications"
+                Log.e("NotificationVM", "Clear error", it)
             }
     }
 
-    // Toggle read status of a notification
-    fun toggleReadStatus(notification: Notification) {
-        val newStatus = !notification.read
-        notificationsRef.document(notification.id)
-            .update("read", newStatus) // Use 'read' instead of 'isRead'
-            .addOnSuccessListener {
-                Log.d("NotificationViewModel", "Notification read status updated successfully.")
-            }
-            .addOnFailureListener { e ->
-                _errorMessage.value = "Error updating notification read status"
-                Log.e("NotificationViewModel", "Error updating notification read status", e)
-            }
-    }
+    fun unreadNotificationsCount(): Int = _notificationState.value.count { !it.read }
+
+    fun refreshNotifications() = fetchNotifications()
 
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
 
-    fun refreshNotifications() {
-        fetchNotificationsFromFirestore()
+    private fun updateNotificationField(notification: Notification, field: String, value: Any) {
+        updateNotificationIfAuthorized(notification) {
+            notificationsRef.document(notification.id).update(field, value)
+        }
     }
-    // Count unread notifications
-    fun unreadNotificationsCount(): Int {
-        return _notificationState.value.count { !it.read }  // Use 'read' here instead of 'isRead'
+
+    private fun updateNotificationIfAuthorized(notification: Notification, operation: () -> Unit) {
+        val uid = auth.currentUser?.uid
+        if (uid != null && notification.userId == uid) {
+            operation()
+        } else {
+            _errorMessage.value = "Not authorized"
+        }
     }
 }

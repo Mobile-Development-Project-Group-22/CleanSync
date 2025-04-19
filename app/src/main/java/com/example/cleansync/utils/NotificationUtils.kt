@@ -14,6 +14,7 @@ import com.example.cleansync.R
 import com.example.cleansync.data.model.Notification
 import com.example.cleansync.data.service.LocalNotificationReceiver
 import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.*
 
@@ -22,7 +23,14 @@ object NotificationUtils {
     private const val CHANNEL_ID = "cleansync_notifications"
     private const val CHANNEL_NAME = "CleanSync Notifications"
 
+    private const val TAG = "NotificationUtils" // Log tag for easier identification in Logcat
+
+    /**
+     * Send a custom push notification.
+     */
     fun sendCustomNotification(context: Context, title: String, message: String) {
+        Log.d(TAG, "Sending custom notification with title: $title, message: $message")
+
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -44,18 +52,29 @@ object NotificationUtils {
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannelIfNeeded(manager)
-        manager.notify(UUID.randomUUID().hashCode(), builder.build())
+
+        // Issue the notification with a unique ID
+        val notificationId = UUID.randomUUID().hashCode()
+        manager.notify(notificationId, builder.build())
+
+        Log.d(TAG, "Notification sent with ID: $notificationId")
     }
 
+    /**
+     * Schedule a local notification at a specific time.
+     */
     fun scheduleLocalNotification(context: Context, title: String, message: String, timeInMillis: Long?) {
         if (timeInMillis == null) {
-            Log.e("NotificationUtils", "Time in millis is null, cannot schedule notification.")
+            Log.e(TAG, "Time in millis is null, cannot schedule notification.")
             return
         }
+
+        Log.d(TAG, "Scheduling local notification with title: $title, message: $message, at time: $timeInMillis")
 
         val intent = Intent(context, LocalNotificationReceiver::class.java).apply {
             putExtra("title", title)
             putExtra("message", message)
+            putExtra("userId", FirebaseAuth.getInstance().currentUser?.uid)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(
@@ -67,12 +86,20 @@ object NotificationUtils {
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+
+        Log.d(TAG, "Notification scheduled at time: $timeInMillis")
     }
+
+    /**
+     * Save the notification to Firestore.
+     */
     fun saveNotificationToFirestore(userId: String?, message: String) {
         if (userId.isNullOrEmpty()) {
-            Log.w("NotificationUtils", "User not authenticated")
+            Log.w(TAG, "User ID is null or empty. Notification not saved.")
             return
         }
+
+        Log.d(TAG, "Saving notification to Firestore for user: $userId")
 
         val notification = Notification(
             userId = userId,
@@ -84,13 +111,16 @@ object NotificationUtils {
         FirebaseFirestore.getInstance().collection("notifications")
             .add(notification)
             .addOnSuccessListener {
-                Log.d("NotificationUtils", "Notification saved to Firestore")
+                Log.d(TAG, "Notification successfully saved to Firestore.")
             }
             .addOnFailureListener { e ->
-                Log.e("NotificationUtils", "Error saving to Firestore", e)
+                Log.e(TAG, "Error saving notification to Firestore", e)
             }
     }
 
+    /**
+     * Create a notification channel if it doesn't exist (required for Android O and above).
+     */
     private fun createChannelIfNeeded(manager: NotificationManager) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -100,6 +130,7 @@ object NotificationUtils {
                 enableVibration(true)
             }
             manager.createNotificationChannel(channel)
+            Log.d(TAG, "Notification channel created or already exists.")
         }
     }
 }

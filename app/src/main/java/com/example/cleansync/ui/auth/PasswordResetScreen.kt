@@ -47,7 +47,12 @@ fun PasswordResetScreen(
             NotificationUtils.sendCustomNotification(
                 context = context,
                 title = "Password Reset",
-                message = "We've sent a reset link to $email"
+                message = "We've sent a reset link to $email",
+
+            )
+            NotificationUtils.saveNotificationToFirestore(
+                userId = authViewModel.currentUser?.uid ?: "",
+                message = "We've sent a reset link to $email",
             )
         }
     }

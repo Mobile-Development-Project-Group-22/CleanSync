@@ -12,7 +12,7 @@ class LocalNotificationReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra("title") ?: "Reminder"
         val message = intent.getStringExtra("message") ?: "You have a scheduled notification"
 
-        NotificationUtils.sendCustomNotification(context, title, message)
+        NotificationUtils.sendCustomNotification(context, title, message, )
         NotificationUtils.saveNotificationToFirestore(FirebaseAuth.getInstance().currentUser?.uid, message)
     }
 }
