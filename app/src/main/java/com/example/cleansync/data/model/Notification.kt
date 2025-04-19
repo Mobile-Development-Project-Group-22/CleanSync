@@ -7,5 +7,5 @@ data class Notification(
     val userId: String = "",
     val message: String = "",
     val read: Boolean = false,
-    val timestamp: com.google.firebase.Timestamp? = null
+    val timestamp: Timestamp = Timestamp.now()
 )
