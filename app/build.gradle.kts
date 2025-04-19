@@ -113,6 +113,9 @@ dependencies {
 // JSON (if needed for manual parsing, optional with Retrofit + Gson)
     implementation("org.json:json:20210307")
 
+// for swipe to refresh
+    implementation("androidx.compose.material:material:1.7.8") // or latest
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.31.5-beta") // or latest
 
 
 
