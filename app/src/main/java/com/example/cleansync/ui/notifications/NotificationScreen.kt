@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleansync.data.model.Notification
+import com.example.cleansync.ui.theme.CleanSyncTheme
 import com.google.accompanist.swiperefresh.*
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -31,9 +33,7 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
 
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     LaunchedEffect(userId) {
-        if (userId != null) {
-            viewModel.refreshNotifications()
-        }
+        if (userId != null) viewModel.refreshNotifications()
     }
 
     LaunchedEffect(isRefreshing) {
@@ -47,10 +47,14 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
         topBar = {
             TopAppBar(
                 title = { Text("Notifications") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 actions = {
                     if (notifications.isNotEmpty()) {
                         TextButton(onClick = { viewModel.clearAllNotifications() }) {
-                            Text("Clear All", color = MaterialTheme.colorScheme.primary)
+                            Text("Clear All", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
                 }
@@ -64,30 +68,47 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
         ) {
             when {
                 errorMessage != null -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = errorMessage ?: "Error",
+                            text = errorMessage ?: "Error loading notifications.",
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(16.dp)
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
 
                 notifications.isEmpty() -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("No notifications yet.")
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "No notifications yet.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
                 else -> {
                     val grouped = groupNotifications(notifications)
-                    LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp)) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
                         grouped.forEach { (label, items) ->
                             item {
                                 Text(
                                     text = label,
                                     style = MaterialTheme.typography.titleSmall,
-                                    modifier = Modifier.padding(vertical = 8.dp)
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .padding(vertical = 8.dp)
+                                        .fillMaxWidth()
                                 )
                             }
                             items(items) { notification ->
@@ -111,40 +132,42 @@ fun NotificationItem(
     onToggleRead: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val background = if (notification.read)
+    val backgroundColor = if (notification.read)
         MaterialTheme.colorScheme.surface
     else
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .clickable { onToggleRead() },
-        colors = CardDefaults.cardColors(containerColor = background),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier
+                .padding(14.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = notification.message ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     if (!notification.read) {
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
-                                .clip(MaterialTheme.shapes.small)
+                                .clip(MaterialTheme.shapes.extraSmall)
                                 .background(MaterialTheme.colorScheme.primary)
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = formatTimestamp(notification.timestamp),
                     style = MaterialTheme.typography.labelSmall,
@@ -152,11 +175,16 @@ fun NotificationItem(
                 )
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete")
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
+
 
 fun formatTimestamp(timestamp: Timestamp?): String {
     if (timestamp == null) return ""
@@ -187,3 +215,5 @@ fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
     return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
             cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
+
+
