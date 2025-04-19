@@ -44,15 +44,14 @@ fun PasswordResetScreen(
         if (authState is AuthState.PasswordResetSent) {
             showSuccessDialog = true
             focusManager.clearFocus()
-            NotificationUtils.sendCustomNotification(
+
+            // Send notification about the password reset
+            NotificationUtils.triggerNotification(
                 context = context,
                 title = "Password Reset",
-                message = "We've sent a reset link to $email",
-
-            )
-            NotificationUtils.saveNotificationToFirestore(
-                userId = authViewModel.currentUser?.uid ?: "",
-                message = "We've sent a reset link to $email",
+                message = "A password reset link has been sent to $email",
+                isForgotPassword = true,  // Flag to indicate this is a password reset
+                email = email
             )
         }
     }
