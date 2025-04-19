@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.NotificationAdd
 import androidx.compose.material3.*
 import androidx.compose.material3.AlertDialogDefaults.containerColor
 import androidx.compose.runtime.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cleansync.data.model.Notification
@@ -46,7 +48,11 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notifications") },
+                title = {
+                    Text("Notifications",
+                        textAlign = TextAlign.Center,
+                        )
+                        },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -85,11 +91,36 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "No notifications yet.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column (
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp), // Spacing between elements
+                            modifier = Modifier
+                                .padding(24.dp) // Add padding around the entire layout
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                        ){
+                            Icon(
+                                imageVector = Icons.Default.NotificationAdd,
+                                contentDescription = "No Notifications",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .size(64.dp) // Slightly larger icon for better visibility
+                            )
+                            Text(
+                                text = "No Notifications",
+                                style = MaterialTheme.typography.headlineMedium, // Larger, bolder text
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "You will see notifications here when you receive them.",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyLarge, // Slightly larger body text
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .padding(horizontal = 32.dp) // Padding on left and right for better balance
+                            )
+                        }
+
                     }
                 }
 
