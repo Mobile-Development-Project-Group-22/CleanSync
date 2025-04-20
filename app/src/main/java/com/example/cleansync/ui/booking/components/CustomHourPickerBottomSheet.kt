@@ -22,7 +22,8 @@ import java.util.*
 @Composable
 fun DateAndHourPicker(
     context: Context,
-    bookingViewModel: BookingViewModel
+    bookingViewModel: BookingViewModel? = null,
+    onDateTimeSelected: ((LocalDateTime) -> Unit)? = null
 ) {
     val bottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
@@ -67,7 +68,6 @@ fun DateAndHourPicker(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Hour buttons
                 val hours = (10..17).toList()
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -83,10 +83,11 @@ fun DateAndHourPicker(
                                             LocalTime.of(hour, 0)
                                         )
                                         if (dateTime.isBefore(LocalDateTime.now())) {
-                                            bookingViewModel.errorMessage = "Time is in the past!"
+                                            bookingViewModel?.errorMessage = "Time is in the past!"
                                         } else {
-                                            bookingViewModel.updateSelectedDateTime(dateTime)
-                                            bookingViewModel.errorMessage = null
+                                            bookingViewModel?.updateSelectedDateTime(dateTime)
+                                            onDateTimeSelected?.invoke(dateTime)
+                                            bookingViewModel?.errorMessage = null
                                         }
                                         coroutineScope.launch {
                                             bottomSheetState.hide()

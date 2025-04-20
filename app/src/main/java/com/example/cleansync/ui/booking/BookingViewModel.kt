@@ -21,6 +21,7 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 class BookingViewModel : ViewModel() {
+
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -105,7 +106,6 @@ class BookingViewModel : ViewModel() {
         }
     }
 
-    // Renamed to avoid JVM clash
     fun updateSelectedDateTime(dateTime: LocalDateTime) {
         selectedDateTime = dateTime
     }
@@ -122,7 +122,7 @@ class BookingViewModel : ViewModel() {
             return
         }
 
-        val booking = Booking(
+        val newBooking = Booking(
             userId = userId,
             name = name,
             email = email,
@@ -133,14 +133,23 @@ class BookingViewModel : ViewModel() {
             length = length,
             width = width,
             estimatedPrice = estimatedPrice!!,
-            bookingDateTime = formattedDateTime
+            bookingDateTime = formattedDateTime,
         )
 
+        // Add booking and then update with the Firestore-generated ID
         db.collection("bookings")
-            .add(booking)
-            .addOnSuccessListener {
-                errorMessage = null
-                onSuccess()
+            .add(newBooking)
+            .addOnSuccessListener { documentRef ->
+                documentRef.update("id", documentRef.id)
+                    .addOnSuccessListener {
+                        errorMessage = null
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Firestore", "Failed to update ID field", e)
+                        errorMessage = "Booking saved, but failed to set ID."
+                        onFailure(e)
+                    }
             }
             .addOnFailureListener { e ->
                 Log.e("Firestore", "Error saving booking", e)
