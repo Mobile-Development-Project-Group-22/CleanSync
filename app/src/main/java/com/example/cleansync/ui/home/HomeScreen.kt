@@ -293,7 +293,7 @@ fun CalendarView(
     val startDayOfWeek = (firstDayOfMonth.dayOfWeek.value + 6) % 7 // Monday = 0
 
     val dates = List(startDayOfWeek) { null } + List(daysInMonth) {
-        selectedMonth.plusDays(it.toLong())
+        selectedMonth.withDayOfMonth(it + 1)
     }
 
     val rows = dates.chunked(7).map { week ->
@@ -316,22 +316,27 @@ fun CalendarView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = {
-                selectedMonth = selectedMonth.minusMonths(1)
-            }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
+            IconButton(onClick = { selectedMonth = selectedMonth.minusMonths(1) }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Previous Month",
+                    tint = MaterialTheme.colorScheme.primary // Use primary color for icons
+                )
             }
 
             Text(
                 text = selectedMonth.month.name.lowercase()
                     .replaceFirstChar { it.uppercase() } + " ${selectedMonth.year}",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
-            IconButton(onClick = {
-                selectedMonth = selectedMonth.plusMonths(1)
-            }) {
-                Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
+            IconButton(onClick = { selectedMonth = selectedMonth.plusMonths(1) }) {
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = "Next Month",
+                    tint = MaterialTheme.colorScheme.primary // Use primary color for icons
+                )
             }
         }
 
@@ -344,7 +349,8 @@ fun CalendarView(
                     text = day,
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -373,24 +379,30 @@ fun CalendarView(
                             val isBooked = bookingsByDate.containsKey(date)
                             val isToday = date == today
 
+                            val bgColor = when {
+                                isToday -> MaterialTheme.colorScheme.primaryContainer
+                                isBooked -> MaterialTheme.colorScheme.secondaryContainer
+                                else -> MaterialTheme.colorScheme.surface
+                            }
+
+                            val textColor = when {
+                                isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+                                isBooked -> MaterialTheme.colorScheme.onSecondaryContainer
+                                else -> MaterialTheme.colorScheme.onSurface
+                            }
+
                             Surface(
                                 shape = CircleShape,
-                                color = when {
-                                    isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                                    isBooked -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
-                                    else -> MaterialTheme.colorScheme.surfaceVariant
-                                },
+                                color = bgColor,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clickable { onDateClick(date) }
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center
-                                ) {
+                                Box(contentAlignment = Alignment.Center) {
                                     Text(
                                         text = date.dayOfMonth.toString(),
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = textColor
                                     )
                                 }
                             }
@@ -401,6 +413,7 @@ fun CalendarView(
         }
     }
 }
+
 
 
 
