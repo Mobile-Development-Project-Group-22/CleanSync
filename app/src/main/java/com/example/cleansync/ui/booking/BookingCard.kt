@@ -24,33 +24,64 @@ fun BookingCard(
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable { onExpandToggle() },
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("📅 ${booking.bookingDateTime}", style = MaterialTheme.typography.titleMedium)
-            Text("🏠 ${booking.streetAddress}", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = "📅 ${booking.bookingDateTime}",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "🏠 ${booking.streetAddress}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("👤 ${booking.name}")
-                Text("📧 ${booking.email}")
-                Text("📞 ${booking.phoneNumber}")
-                Text("📏 ${booking.length}m x ${booking.width}m")
-                Text("💶 €${booking.estimatedPrice}")
-                Text("🏙️ ${booking.city}")
-                Text("📬 ${booking.postalCode}")
+
+                listOf(
+                    "👤 ${booking.name}",
+                    "📧 ${booking.email}",
+                    "📞 ${booking.phoneNumber}",
+                    "📏 ${booking.length}m x ${booking.width}m",
+                    "💶 €${booking.estimatedPrice}",
+                    "🏙️ ${booking.city}",
+                    "📬 ${booking.postalCode}"
+                ).forEach {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onEdit, modifier = Modifier.weight(1f)) {
+                    OutlinedButton(
+                        onClick = onEdit,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
                         Icon(Icons.Default.Edit, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Edit")
                     }
+
                     OutlinedButton(
                         onClick = onCancel,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
                     ) {
                         Icon(Icons.Default.Cancel, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
@@ -61,3 +92,4 @@ fun BookingCard(
         }
     }
 }
+
