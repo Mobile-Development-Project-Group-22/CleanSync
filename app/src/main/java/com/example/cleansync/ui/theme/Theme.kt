@@ -7,45 +7,30 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFA78BFA),
-    secondary = Color(0xFF38BDF8),
-    tertiary = Color(0xFF818CF8),
-    background = Color(0xFF1E1E2E),
-    surface = Color(0xFF2D2D3D),
-    onPrimary = Color(0xFF1E1E1E),
-    onSecondary = Color(0xFF1E1E1E),
-    onBackground = Color(0xFFE2E8F0),
-    onSurface = Color(0xFFE2E8F0),
-    error = Color(0xFFF87171),
-    onError = Color.Black,
-    inverseSurface = Color(0xFFE2E8F0),
-    inverseOnSurface = Color(0xFF1E1E2E),
-    outline = Color(0xFF94A3B8) // Slate-400
+// Light Mode Palette
+private val LightColorScheme = lightColorScheme(
+    primary = Color(0xFF007BFF), // Vibrant Blue
+    secondary = Color(0xFFFF9900), // Muted Orange
+    background = Color(0xFFFFFFFF), // White
+    surface = Color(0xFFF7F7F7), // Light Gray
+    onPrimary = Color(0xFFFFFFFF), // White text on primary
+    onSecondary = Color(0xFFFFFFFF), // White text on secondary
+    onBackground = Color(0xFF333333), // Dark Text
+    onSurface = Color(0xFF333333), // Dark Text on surface
+    // Add more colors if needed
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF6366F1),         // Indigo-500
-    onPrimary = Color.White,
-
-    secondary = Color(0xFF0EA5E9),       // Sky-500
-    onSecondary = Color.White,
-
-    tertiary = Color(0xFF7C3AED),        // Violet-600
-    onTertiary = Color.White,
-
-    background = Color(0xFFFAFAFF),      // Cool light gray-blue
-    onBackground = Color(0xFF1E293B),    // Slate-800
-
-    surface = Color.White,
-    onSurface = Color(0xFF334155),       // Slate-700
-
-    error = Color(0xFFDC2626),           // Red-600
-    onError = Color.White,
-
-    inverseSurface = Color(0xFF1E293B),  // Dark surface for dialogs/snacks
-    inverseOnSurface = Color(0xFFF8FAFC),// Light text on dark surface
-    outline = Color(0xFFD1D5DB)          // Light gray outline
+// Dark Mode Palette
+private val DarkColorScheme = darkColorScheme(
+    primary = Color(0xFF4A90E2), // Bright Blue
+    secondary = Color(0xFFFF6F00), // Muted Orange
+    background = Color(0xFF121212), // Dark Gray Background
+    surface = Color(0xFF1C1C1C), // Darker Gray
+    onPrimary = Color(0xFFFFFFFF), // White text on primary
+    onSecondary = Color(0xFFFFFFFF), // White text on secondary
+    onBackground = Color(0xFFE0E0E0), // Light Gray Text
+    onSurface = Color(0xFFE0E0E0), // Light Gray Text on surface
+    // Add more colors if needed
 )
 
 @Composable
@@ -61,7 +46,7 @@ fun CleanSyncTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = Typography, // Assuming Typography is defined elsewhere
         content = content
     )
 }
