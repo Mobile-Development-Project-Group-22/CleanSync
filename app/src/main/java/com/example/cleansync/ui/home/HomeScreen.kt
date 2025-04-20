@@ -131,7 +131,8 @@ private fun HomeAppBar(
                 IconButton(onClick = onNotificationClick) {
                     Icon(
                         imageVector = Icons.Default.Notifications,
-                        contentDescription = "Notifications"
+                        contentDescription = "Notifications",
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -139,12 +140,14 @@ private fun HomeAppBar(
             IconButton(onClick = onProfileClick) {
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile"
+                    contentDescription = "Profile",
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
     )
 }
+
 @Composable
 private fun HomeContent(
     modifier: Modifier = Modifier,
@@ -176,10 +179,14 @@ private fun HomeContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = MaterialTheme.shapes.large
+                shape = MaterialTheme.shapes.large,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedButton(
                 onClick = {
@@ -225,7 +232,10 @@ private fun HomeContent(
 
         if (bookings.isEmpty()) {
             item {
-                Text("No bookings yet.", style = MaterialTheme.typography.bodyMedium)
+                Text("No bookings yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
             }
         } else {
             items(bookings.sortedBy { it.timestamp }) { booking ->
@@ -333,8 +343,7 @@ fun CalendarView(
                 Text(
                     text = day,
                     style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier
-                        .weight(1f),
+                    modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -375,7 +384,9 @@ fun CalendarView(
                                     .fillMaxSize()
                                     .clickable { onDateClick(date) }
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
+                                Box(
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
                                         text = date.dayOfMonth.toString(),
                                         style = MaterialTheme.typography.bodyMedium,
@@ -393,22 +404,22 @@ fun CalendarView(
 
 
 
-
 @Composable
 private fun BookingCard(booking: Booking) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Name: ${booking.name}",
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Text("City: ${booking.city}", style = MaterialTheme.typography.bodyMedium)
-            Text("Booking Time: ${booking.bookingDateTime}", style = MaterialTheme.typography.bodyMedium)
-            Text("Estimated Price: \$${booking.estimatedPrice}", style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Booking Date: ${booking.bookingDateTime}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            ) } } }
