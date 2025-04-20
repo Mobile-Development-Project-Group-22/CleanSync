@@ -1,6 +1,11 @@
 package com.example.cleansync.ui.home
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Notifications
@@ -12,9 +17,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.cleansync.model.Booking
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.utils.NotificationUtils
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,20 +36,18 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
-    // Manually create HomeViewModel using provided dependencies
     val homeViewModel = remember { HomeViewModel(authViewModel, notificationViewModel) }
     val showEmailDialog by homeViewModel.showEmailVerificationDialog.collectAsStateWithLifecycle()
+    val bookings by homeViewModel.bookings.collectAsStateWithLifecycle()
     val currentUser = homeViewModel.currentUser
     val context = LocalContext.current
 
-    // Trigger logout if not logged in
     LaunchedEffect(homeViewModel.isLoggedIn) {
         if (!homeViewModel.isLoggedIn) {
             onLogout()
         }
     }
 
-    // Show email verification dialog
     if (showEmailDialog) {
         AlertDialog(
             onDismissRequest = { homeViewModel.dismissEmailDialog() },
@@ -75,6 +83,7 @@ fun HomeScreen(
         content = { innerPadding ->
             HomeContent(
                 modifier = Modifier.padding(innerPadding),
+                bookings = bookings,
                 onBookingClick = onNavigateToBooking,
                 onLogoutClick = {
                     homeViewModel.signOut()
@@ -132,64 +141,245 @@ private fun HomeAppBar(
         }
     )
 }
-
 @Composable
 private fun HomeContent(
     modifier: Modifier = Modifier,
+    bookings: List<Booking>,
     onBookingClick: () -> Unit,
     onLogoutClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    Column(
+
+    val bookingsByDate = bookings.groupBy {
+        LocalDateTime.parse(it.bookingDateTime, DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")).toLocalDate()
+    }
+
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        FilledTonalButton(
-            onClick = onBookingClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
+            FilledTonalButton(
+                onClick = onBookingClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
+            }
+
+            OutlinedButton(
+                onClick = {
+                    NotificationUtils.triggerNotification(
+                        context = context,
+                        title = "Test Notification",
+                        message = "This is a test notification",
+                        read = false,
+                        scheduleTimeMillis = null
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Text("Test Notification", style = MaterialTheme.typography.labelLarge)
+            }
         }
 
-        OutlinedButton(
-            onClick = {
-                NotificationUtils.triggerNotification(
-                    context = context,
-                    title = "Test Notification",
-                    message = "This is a test notification",
-                    read = false,
-                    scheduleTimeMillis = null
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Text("Test Notification", style = MaterialTheme.typography.labelLarge)
-        }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        TextButton(
-            onClick = onLogoutClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                "Logout",
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.labelLarge
+        item {
+            CalendarView(
+                bookingsByDate = bookingsByDate,
+                onDateClick = { date ->
+                    selectedDate = date
+                    showDialog = true
+                }
             )
         }
 
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(
+                    text = "Upcoming Bookings",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+        }
+
+        if (bookings.isEmpty()) {
+            item {
+                Text("No bookings yet.", style = MaterialTheme.typography.bodyMedium)
+            }
+        } else {
+            items(bookings.sortedBy { it.timestamp }) { booking ->
+                BookingCard(booking = booking)
+            }
+        }
+
+        item {
+            TextButton(
+                onClick = onLogoutClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "Logout",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+
+    if (showDialog && selectedDate != null) {
+        val bookingsOnDate = bookingsByDate[selectedDate] ?: emptyList()
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text("Bookings on ${selectedDate.toString()}") },
+            text = {
+                Column {
+                    bookingsOnDate.forEach {
+                        Text("• ${it.name} at ${it.bookingDateTime}", style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+}
+
+
+@Composable
+private fun CalendarView(
+    bookingsByDate: Map<LocalDate, List<Booking>>,
+    onDateClick: (LocalDate) -> Unit
+) {
+    val today = remember { LocalDate.now() }
+    val currentMonth = remember { today.withDayOfMonth(1) }
+    val daysInMonth = currentMonth.lengthOfMonth()
+    val startDayOfWeek = (currentMonth.dayOfWeek.value + 6) % 7 // Monday = 0
+
+    val datesInMonth = (1..daysInMonth).map { day ->
+        currentMonth.withDayOfMonth(day)
+    }
+    val dates = List(startDayOfWeek) { null } + datesInMonth
+
+    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Calendar", style = MaterialTheme.typography.titleMedium)
+
         Spacer(modifier = Modifier.height(8.dp))
+
+        // Day-of-week headers
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            dayLabels.forEach { day ->
+                Text(
+                    text = day,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Calendar grid
+        val rows = dates.chunked(7).map { week ->
+            if (week.size < 7) week + List(7 - week.size) { null } else week
+        }
+
+        rows.forEach { week ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                week.forEach { date ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .padding(2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (date == null) {
+                            Spacer(modifier = Modifier.fillMaxSize())
+                        } else {
+                            val isBooked = bookingsByDate.containsKey(date)
+                            val isToday = date == today
+
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = when {
+                                    isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                    isBooked -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                },
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable { onDateClick(date) }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = date.dayOfMonth.toString(),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+@Composable
+private fun BookingCard(booking: Booking) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Name: ${booking.name}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text("City: ${booking.city}", style = MaterialTheme.typography.bodyMedium)
+            Text("Booking Time: ${booking.bookingDateTime}", style = MaterialTheme.typography.bodyMedium)
+            Text("Estimated Price: \$${booking.estimatedPrice}", style = MaterialTheme.typography.bodyMedium)
+        }
     }
 }
