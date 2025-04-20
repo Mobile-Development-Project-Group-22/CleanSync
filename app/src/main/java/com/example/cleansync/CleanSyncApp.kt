@@ -26,6 +26,7 @@ import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
+import com.example.cleansync.ui.booking.BookingViewModel
 
 @Composable
 fun CleanSyncApp(
@@ -34,11 +35,14 @@ fun CleanSyncApp(
 ) {
     val notificationViewModel = NotificationViewModel()
     val navController = rememberNavController()
+    val bookingViewModel: BookingViewModel = viewModel()
+
 
     MainScreen(
         navController = navController,
         authViewModel = authViewModel,
         notificationViewModel = notificationViewModel,
+        bookingViewModel = bookingViewModel,
         onThemeToggle = onThemeToggle
     )
 }
@@ -48,6 +52,7 @@ fun MainScreen(
     navController: NavHostController,
     authViewModel: AuthViewModel,
     notificationViewModel: NotificationViewModel,
+    bookingViewModel: BookingViewModel,
     onThemeToggle: (Boolean) -> Unit
 ) {
     val unreadCount = notificationViewModel.unreadNotificationsCount()
@@ -75,6 +80,7 @@ fun MainScreen(
             navController = navController,
             authViewModel = authViewModel,
             notificationViewModel = notificationViewModel,
+            bookingViewModel = bookingViewModel,
             modifier = Modifier.padding(innerPadding),
             onThemeToggle = onThemeToggle
         )
@@ -89,6 +95,7 @@ fun AppNavHost(
     navController: NavHostController,
     authViewModel: AuthViewModel,
     notificationViewModel: NotificationViewModel,
+    bookingViewModel: BookingViewModel,
     modifier: Modifier = Modifier,
     onThemeToggle: (Boolean) -> Unit
 ) {
@@ -170,21 +177,16 @@ fun AppNavHost(
                 viewModel = notificationViewModel,
             )
         }
-        composable(Screen.BookingStartScreen.route) {
-            MyBookingsScreen(
-                bookingViewModel = viewModel(),
 
-            )
-        }
         composable(Screen.MyBookingsScreen.route) {
             MyBookingsScreen(
-                bookingViewModel = viewModel(),
+                bookingViewModel = bookingViewModel,
             )
         }
 
         composable(Screen.BookingStartScreen.route) {
             BookingStartScreen(
-                bookingViewModel = viewModel(),
+                bookingViewModel = bookingViewModel,
                 onBookingConfirmed = {
                     navController.navigate(Screen.BookingFormScreen.route)
                 },
@@ -195,7 +197,7 @@ fun AppNavHost(
         }
         composable(Screen.BookingConfirmationScreen.route) {
             BookingConfirmationScreen(
-                bookingViewModel = viewModel(),
+                bookingViewModel = bookingViewModel,
                 onReturnHome = {
                     navController.navigate(Screen.HomeScreen.route) {
                         popUpTo(Screen.BookingStartScreen.route) { inclusive = true }
@@ -205,7 +207,7 @@ fun AppNavHost(
         }
         composable(Screen.BookingFormScreen.route) {
             BookingFormScreen(
-                bookingViewModel = viewModel(),
+                bookingViewModel = bookingViewModel,
                 onBookingDone = {
                     navController.navigate(Screen.BookingConfirmationScreen.route) {
                         popUpTo(Screen.BookingFormScreen.route) { inclusive = true }
