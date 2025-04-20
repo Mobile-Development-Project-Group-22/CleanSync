@@ -139,18 +139,7 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Button(
-                    onClick = { showDeletePasswordDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    ),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = ButtonDefaults.buttonElevation(4.dp)
-                ) {
-                    Text(text = "Delete Password", style = MaterialTheme.typography.labelLarge)
-                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
