@@ -1,18 +1,16 @@
+// BookingStartScreen.kt
 package com.example.cleansync.ui.booking
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
-import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import java.time.LocalDateTime
-import java.util.*
+import com.example.cleansync.ui.booking.components.CarpetInputForm
+import com.example.cleansync.ui.booking.components.DateAndHourPicker
 
 @Composable
 fun BookingStartScreen(
@@ -21,83 +19,65 @@ fun BookingStartScreen(
     onBookingCancelled: () -> Unit
 ) {
     val context = LocalContext.current
+    var showDatePicker by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
+        Text(
+            text = "Book Carpet Cleaning",
+            style = MaterialTheme.typography.headlineSmall
+        )
+
         Button(onClick = { bookingViewModel.toggleInputFields() }) {
-            Text("Calculate Price")
+            Text("Start Calculation")
         }
 
-        if (bookingViewModel.showInputFields) {
-            OutlinedTextField(
-                value = bookingViewModel.length,
-                onValueChange = { bookingViewModel.length = it },
-                label = { Text("Carpet Length (m)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+        AnimatedVisibility(visible = bookingViewModel.showInputFields) {
+            CarpetInputForm(
+                length = bookingViewModel.length,
+                width = bookingViewModel.width,
+                onLengthChange = { bookingViewModel.length = it },
+                onWidthChange = { bookingViewModel.width = it },
+                onCalculate = bookingViewModel::calculatePrice
             )
-
-            OutlinedTextField(
-                value = bookingViewModel.width,
-                onValueChange = { bookingViewModel.width = it },
-                label = { Text("Carpet Width (m)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Button(onClick = { bookingViewModel.calculatePrice() }) {
-                Text("Calculate Now")
-            }
         }
 
         bookingViewModel.estimatedPrice?.let { price ->
-            Text("Estimated Price: €$price")
+            Text("Estimated Price: €$price", style = MaterialTheme.typography.bodyLarge)
 
             Button(onClick = {
-                showDateTimePicker(context, bookingViewModel)
+                showDatePicker = true
             }) {
                 Text("Select Date & Time")
+            }
+
+            if (showDatePicker) {
+                DateAndHourPicker(
+                    context = context,
+                    bookingViewModel = bookingViewModel
+                )
             }
         }
 
         bookingViewModel.selectedDateTime?.let {
             Text("Selected: ${bookingViewModel.formattedDateTime}")
 
-            Button(onClick = {
-                onBookingConfirmed()
-            }) {
+            Button(onClick = onBookingConfirmed) {
                 Text("Continue to Booking Form")
             }
 
-            Button(onClick = onBookingCancelled) {
+            OutlinedButton(onClick = onBookingCancelled) {
                 Text("Cancel")
             }
         }
+
+        bookingViewModel.errorMessage?.let {
+            Text(text = it, color = MaterialTheme.colorScheme.error)
+        }
     }
-}
-
-fun showDateTimePicker(context: Context, bookingViewModel: BookingViewModel) {
-    val current = Calendar.getInstance()
-
-    DatePickerDialog(
-        context,
-        { _, year, month, day ->
-            TimePickerDialog(
-                context,
-                { _, hour, minute ->
-                    val selectedDateTime = LocalDateTime.of(year, month + 1, day, hour, minute)
-                    bookingViewModel.updateSelectedDateTime(selectedDateTime) // updated name
-                },
-                current.get(Calendar.HOUR_OF_DAY),
-                current.get(Calendar.MINUTE),
-                true
-            ).show()
-        },
-        current.get(Calendar.YEAR),
-        current.get(Calendar.MONTH),
-        current.get(Calendar.DAY_OF_MONTH)
-    ).show()
 }
