@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.booking
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -30,14 +31,25 @@ fun BookingConfirmationScreen(
         estimatedPrice?.let { "€$it" } ?: "Not available"
     }
 
-    // Send a confirmation push (once)
+    // Send a confirmation push (once) and schedule a notification 1 hour before the booking
     LaunchedEffect(Unit) {
-        formattedDateTime?.let {
-            NotificationUtils.sendCustomNotification(
-                context = context,
-                title = "Booking Confirmation",
-                message = "Your booking has been confirmed for $it. Estimated Price: $formattedPrice"
-            )
+        selectedDateTime?.let {
+            val bookingTimeMillis = it.toEpochMillis()
+            val reminderTimeMillis = bookingTimeMillis - 3600000L  // 1 hour before
+
+            val now = System.currentTimeMillis()
+            Log.d("BookingConfirmationScreen", "Now: $now, Scheduled: $reminderTimeMillis")
+
+            if (reminderTimeMillis > now) {
+                NotificationUtils.triggerNotification(
+                    context = context,
+                    title = "Appointment Reminder",
+                    message = "Your booking is in 1 hour. Time: $formattedDateTime",
+                    scheduleTimeMillis = reminderTimeMillis
+                )
+            } else {
+                Log.w("BookingConfirmationScreen", "Reminder time is in the past. Skipping notification.")
+            }
         }
     }
 
@@ -75,20 +87,6 @@ fun BookingConfirmationScreen(
 
         Button(
             onClick = {
-                // Schedule reminder 1 hour before
-                selectedDateTime?.let { dateTime ->
-                    val millis = selectedDateTime
-                        ?.minusMinutes(60)
-                        ?.toEpochMillis()
-
-                    NotificationUtils.triggerNotification(
-                        context = context,
-                        title = "Booking Reminder",
-                        message = "Your booking is in 1 hour!",
-                        scheduleTimeMillis = millis
-                    )
-                }
-
                 bookingViewModel.resetBooking()
                 onReturnHome()
             },

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
@@ -33,32 +34,35 @@ object NotificationUtils {
         context: Context,
         title: String,
         message: String,
+        appointmentTimeMillis: Long? = null, // Optional, for scheduled notifications
         read: Boolean = false,
         scheduleTimeMillis: Long? = null,
         email: String? = null,
-        isForgotPassword: Boolean = false  // added flag for password reset
+        isForgotPassword: Boolean = false
     ) {
-        // If it's a forgot password notification, save it to Firestore without checking auth state
-        if (isForgotPassword) {
-            // Save to Firestore for tracking purposes without checking auth state
-            saveNotificationToFirestore(null, message)  // No userId needed for this case
-        } else {
+        // Save to Firestore only for persistent notifications (not for temporary ones like "forgot password")
+        if (!isForgotPassword) {
             val userId = FirebaseAuth.getInstance().currentUser?.uid
-
-            // Only save to Firestore if user is authenticated
             if (!userId.isNullOrEmpty()) {
                 saveNotificationToFirestore(userId, message)
             } else {
-                Log.w(TAG, "User not authenticated; skipping Firestore save for regular notification.")
+                Log.w(TAG, "User not authenticated; skipping Firestore save for notification.")
             }
         }
 
+        val notificationTimeMillis = appointmentTimeMillis?.let { it - 3600000L }
+
         if (scheduleTimeMillis != null) {
+            Log.d(TAG, "Scheduling notification for future: $scheduleTimeMillis")
             scheduleLocalNotification(context, title, message, scheduleTimeMillis)
         } else {
+            Log.d(TAG, "Sending notification immediately")
             sendCustomNotification(context, title, message)
         }
+
+
     }
+
 
     /**
      * Send a custom notification immediately.
@@ -70,9 +74,9 @@ object NotificationUtils {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
+        // Re-use a consistent request code for the notification to avoid unnecessary new instances
         val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            context, title.hashCode(), intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -83,12 +87,12 @@ object NotificationUtils {
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setVibrate(longArrayOf(0, 200, 100, 200))
-            .setSound(Uri.parse("android.resource://${context.packageName}/raw/custom_sound"))
+            .setSound(Uri.parse("android.resource://${context.packageName}/raw/notification_alert_269289"))
 
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannelIfNeeded(manager)
 
-        manager.notify(UUID.randomUUID().hashCode(), builder.build())
+        manager.notify(title.hashCode(), builder.build())  // Use title.hashCode() to create a consistent notification ID
         Log.d(TAG, "Notification sent.")
     }
 
@@ -96,7 +100,15 @@ object NotificationUtils {
      * Schedule a notification for a specific time.
      */
     fun scheduleLocalNotification(context: Context, title: String, message: String, timeInMillis: Long) {
-        Log.d(TAG, "Scheduling notification: $title at $timeInMillis")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            if (!alarmManager.canScheduleExactAlarms()) {
+                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                Log.w(TAG, "Cannot schedule exact alarms. Prompting user for permission.")
+                return
+            }
+        }
 
         val intent = Intent(context, LocalNotificationReceiver::class.java).apply {
             putExtra("title", title)
@@ -104,9 +116,10 @@ object NotificationUtils {
             putExtra("userId", FirebaseAuth.getInstance().currentUser?.uid)
         }
 
+        val requestCode = title.hashCode()
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            UUID.randomUUID().hashCode(),
+            requestCode,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -156,14 +169,21 @@ object NotificationUtils {
      */
     private fun createChannelIfNeeded(manager: NotificationManager) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Channel for CleanSync notifications"
-                enableVibration(true)
+            val existingChannel = manager.getNotificationChannel(CHANNEL_ID)
+            if (existingChannel == null) {
+                val channel = NotificationChannel(
+                    CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Channel for CleanSync notifications"
+                    enableVibration(true)
+                }
+                manager.createNotificationChannel(channel)
+                Log.d(TAG, "Notification channel created.")
+            } else {
+                Log.d(TAG, "Notification channel already exists, no need to recreate.")
             }
-            manager.createNotificationChannel(channel)
-            Log.d(TAG, "Notification channel created.")
         }
     }
+
+
 }
