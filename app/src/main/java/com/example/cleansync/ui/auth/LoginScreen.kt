@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +40,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 import com.google.android.gms.common.api.ApiException
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     authViewModel: AuthViewModel = viewModel(),
@@ -174,7 +177,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Email Field
+// Email Field with outline
             OutlinedTextField(
                 value = email,
                 onValueChange = {
@@ -187,19 +190,26 @@ fun LoginScreen(
                     imeAction = ImeAction.Next
                 ),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
+                colors = OutlinedTextFieldDefaults.colors(
+
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+
+                    ),
                 isError = emailError != null,
                 supportingText = { emailError?.let { Text(it) } }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password Field
+// Password Field with outline
             OutlinedTextField(
                 value = password,
                 onValueChange = {
@@ -224,15 +234,25 @@ fun LoginScreen(
                     }
                 },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                ),
+                colors = OutlinedTextFieldDefaults.colors(
+
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+
+                    ),
                 isError = passwordError != null,
                 supportingText = { passwordError?.let { Text(it) } }
             )
+
 
             // Forgot Password
             TextButton(
