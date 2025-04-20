@@ -25,6 +25,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -267,19 +271,24 @@ private fun HomeContent(
 
 
 @Composable
-private fun CalendarView(
+fun CalendarView(
     bookingsByDate: Map<LocalDate, List<Booking>>,
     onDateClick: (LocalDate) -> Unit
 ) {
+    var selectedMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
     val today = remember { LocalDate.now() }
-    val currentMonth = remember { today.withDayOfMonth(1) }
-    val daysInMonth = currentMonth.lengthOfMonth()
-    val startDayOfWeek = (currentMonth.dayOfWeek.value + 6) % 7 // Monday = 0
 
-    val datesInMonth = (1..daysInMonth).map { day ->
-        currentMonth.withDayOfMonth(day)
+    val daysInMonth = selectedMonth.lengthOfMonth()
+    val firstDayOfMonth = selectedMonth.withDayOfMonth(1)
+    val startDayOfWeek = (firstDayOfMonth.dayOfWeek.value + 6) % 7 // Monday = 0
+
+    val dates = List(startDayOfWeek) { null } + List(daysInMonth) {
+        selectedMonth.plusDays(it.toLong())
     }
-    val dates = List(startDayOfWeek) { null } + datesInMonth
+
+    val rows = dates.chunked(7).map { week ->
+        if (week.size < 7) week + List(7 - week.size) { null } else week
+    }
 
     val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
@@ -289,20 +298,43 @@ private fun CalendarView(
             .padding(vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Calendar", style = MaterialTheme.typography.titleMedium)
+        // Month Navigation
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = {
+                selectedMonth = selectedMonth.minusMonths(1)
+            }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Previous Month")
+            }
+
+            Text(
+                text = selectedMonth.month.name.lowercase()
+                    .replaceFirstChar { it.uppercase() } + " ${selectedMonth.year}",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            IconButton(onClick = {
+                selectedMonth = selectedMonth.plusMonths(1)
+            }) {
+                Icon(Icons.Default.ArrowForward, contentDescription = "Next Month")
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Day-of-week headers
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
+        // Day Labels (Mon to Sun)
+        Row(modifier = Modifier.fillMaxWidth()) {
             dayLabels.forEach { day ->
                 Text(
                     text = day,
                     style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f),
                     textAlign = TextAlign.Center
                 )
             }
@@ -310,11 +342,7 @@ private fun CalendarView(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Calendar grid
-        val rows = dates.chunked(7).map { week ->
-            if (week.size < 7) week + List(7 - week.size) { null } else week
-        }
-
+        // Calendar Grid
         rows.forEach { week ->
             Row(
                 modifier = Modifier
@@ -337,7 +365,7 @@ private fun CalendarView(
                             val isToday = date == today
 
                             Surface(
-                                shape = MaterialTheme.shapes.small,
+                                shape = CircleShape,
                                 color = when {
                                     isToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                                     isBooked -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
@@ -362,6 +390,7 @@ private fun CalendarView(
         }
     }
 }
+
 
 
 
