@@ -221,10 +221,18 @@ fun SignupScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                    colors = OutlinedTextFieldDefaults.colors(
+
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+
+                        ),
                 )
 
                 OutlinedTextField(
@@ -238,10 +246,18 @@ fun SignupScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+
+                        ),
                     isError = email.isNotBlank() && !email.isValidEmail(),
                     supportingText = {
                         if (email.isNotBlank() && !email.isValidEmail()) {
@@ -270,10 +286,18 @@ fun SignupScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+
+                        ),
                     isError = password.isNotBlank() && password.length < 8,
                     supportingText = {
                         if (password.isNotBlank() && password.length < 8) {
@@ -302,10 +326,18 @@ fun SignupScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        disabledContainerColor = MaterialTheme.colorScheme.surface,
+
+                        focusedBorderColor = MaterialTheme.colorScheme.outline,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+
+                        ),
                     isError = confirmPassword.isNotBlank() && password != confirmPassword,
                     supportingText = {
                         if (confirmPassword.isNotBlank() && password != confirmPassword) {
