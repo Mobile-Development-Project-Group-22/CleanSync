@@ -66,7 +66,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun sendNotification(message: String) {
-        val channelId = "cleansync_notifications"
         val notificationId = UUID.randomUUID().toString()
 
         // Create the Intent to open MainActivity when tapped
@@ -80,18 +79,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Set custom vibration pattern
-        val vibrationPattern = longArrayOf(0, 200, 100, 200)
+        // Define a channel ID for the notification
+        val channelId = "cleansync_notifications"
 
         // Build the notification with custom sound and vibration
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_notification) // Ensure this drawable exists
             .setContentTitle("New Message") // Set title as fixed or dynamic
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setVibrate(vibrationPattern)
+            .setVibrate(longArrayOf(0, 200, 100, 200))
             .setSound(Uri.parse("android.resource://$packageName/raw/custom_sound"))
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
