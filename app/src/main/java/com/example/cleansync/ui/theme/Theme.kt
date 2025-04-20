@@ -7,44 +7,40 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-// DeepSeek Light Mode Palette
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF007AFF),       // Vibrant DeepSeek Blue
-    onPrimary = Color(0xFFFFFFFF),     // White text on primary
-    primaryContainer = Color(0xFF5AC8FA), // Light Blue (gradient accent)
-    onPrimaryContainer = Color(0xFF000000),
+    primary = Color(0xFF5B4FB1),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFE0DEFF),
+    onPrimaryContainer = Color(0xFF1E1B4B),
 
-    secondary = Color(0xFF00D1D1),     // DeepSeek Cyan (accent)
+    secondary = Color(0xFF8E8DDF),
     onSecondary = Color(0xFFFFFFFF),
 
-    background = Color(0xFFFFFFFF),    // White background
-    onBackground = Color(0xFF1A1A1A), // Dark text
+    background = Color(0xFFFFFFFF),
+    onBackground = Color(0xFF1A1A1A),
 
-    surface = Color(0xFFF5F5F5),       // Light gray surface
-    onSurface = Color(0xFF333333),     // Dark text on surface
+    surface = Color(0xFFF5F5FA),
+    onSurface = Color(0xFF333344),
 
-    // Optional (adjust as needed)
-    tertiary = Color(0xFF0040DD),      // Dark Blue (gradient part)
+    tertiary = Color(0xFFA688FA)
 )
 
-// DeepSeek Dark Mode Palette
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF5AC8FA),       // Light Blue (gradient start)
-    onPrimary = Color(0xFF000000),     // Black text on primary
-    primaryContainer = Color(0xFF0040DD), // Dark Blue (gradient end)
-    onPrimaryContainer = Color(0xFFFFFFFF),
+    primary = Color(0xFF5B4FB1),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF3D3783),
+    onPrimaryContainer = Color(0xFFE0DEFF),
 
-    secondary = Color(0xFF00D1D1),     // Cyan (accent)
+    secondary = Color(0xFF7D78D1),
     onSecondary = Color(0xFF000000),
 
-    background = Color(0xFF121212),    // Dark background
-    onBackground = Color(0xFFE0E0E0),  // Light text
+    background = Color(0xFF121212),
+    onBackground = Color(0xFFE0E0E0),
 
-    surface = Color(0xFF1C1C1C),       // Dark surface
-    onSurface = Color(0xFFE0E0E0),     // Light text on surface
+    surface = Color(0xFF1C1B2E),
+    onSurface = Color(0xFFE0E0F0),
 
-    // Optional (adjust as needed)
-    tertiary = Color(0xFF007AFF),      // Vibrant Blue
+    tertiary = Color(0xFFC2B8FF)
 )
 
 @Composable
@@ -60,7 +56,7 @@ fun CleanSyncTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography, // Define your Typography elsewhere
+        typography = Typography,
         content = content
     )
 }

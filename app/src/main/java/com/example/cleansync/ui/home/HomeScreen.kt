@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 
@@ -279,7 +282,6 @@ private fun HomeContent(
     }
 }
 
-
 @Composable
 fun CalendarView(
     bookingsByDate: Map<LocalDate, List<Booking>>,
@@ -318,9 +320,9 @@ fun CalendarView(
         ) {
             IconButton(onClick = { selectedMonth = selectedMonth.minusMonths(1) }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Previous Month",
-                    tint = MaterialTheme.colorScheme.primary // Use primary color for icons
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -333,16 +335,16 @@ fun CalendarView(
 
             IconButton(onClick = { selectedMonth = selectedMonth.plusMonths(1) }) {
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = "Next Month",
-                    tint = MaterialTheme.colorScheme.primary // Use primary color for icons
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Day Labels (Mon to Sun)
+        // Day Labels
         Row(modifier = Modifier.fillMaxWidth()) {
             dayLabels.forEach { day ->
                 Text(
@@ -378,32 +380,58 @@ fun CalendarView(
                         } else {
                             val isBooked = bookingsByDate.containsKey(date)
                             val isToday = date == today
+                            val isPast = date.isBefore(today)
 
                             val bgColor = when {
-                                isToday -> MaterialTheme.colorScheme.primaryContainer
+                                isToday -> MaterialTheme.colorScheme.primary
                                 isBooked -> MaterialTheme.colorScheme.secondaryContainer
                                 else -> MaterialTheme.colorScheme.surface
                             }
 
                             val textColor = when {
-                                isToday -> MaterialTheme.colorScheme.onPrimaryContainer
+                                isToday -> MaterialTheme.colorScheme.onPrimary
                                 isBooked -> MaterialTheme.colorScheme.onSecondaryContainer
                                 else -> MaterialTheme.colorScheme.onSurface
                             }
+
+                            val clickable = !isPast
 
                             Surface(
                                 shape = CircleShape,
                                 color = bgColor,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clickable { onDateClick(date) }
+                                    .let {
+                                        if (clickable) {
+                                            it.clickable { onDateClick(date) }
+                                        } else {
+                                            it // Disabled, no click
+                                        }
+                                    }
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
+                                Column(
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
                                     Text(
                                         text = date.dayOfMonth.toString(),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = textColor
                                     )
+
+                                    // Dot for upcoming bookings
+                                    if (isBooked && !isPast) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .padding(top = 2.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.tertiary,
+                                                    shape = CircleShape
+                                                )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -413,7 +441,6 @@ fun CalendarView(
         }
     }
 }
-
 
 
 
