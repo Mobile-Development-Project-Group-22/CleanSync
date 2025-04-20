@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -44,9 +45,8 @@ fun BookingFormScreen(
     onBookingDone: () -> Unit
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
     val addressSuggestions by bookingViewModel.addressSuggestions.collectAsState()
-    val errorMessage = bookingViewModel.errorMessage
+    val errors = bookingViewModel.fieldErrors
 
     val locationPermissionState = rememberPermissionState(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
@@ -59,7 +59,6 @@ fun BookingFormScreen(
         .fillMaxSize()
         .padding(16.dp)) {
 
-        // Use Current Location Button
         Button(
             onClick = {
                 if (locationPermissionState.status.isGranted) {
@@ -68,8 +67,7 @@ fun BookingFormScreen(
                     locationPermissionState.launchPermissionRequest()
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Icon(Icons.Filled.LocationOn, contentDescription = "Current Location")
             Spacer(modifier = Modifier.width(8.dp))
@@ -78,118 +76,82 @@ fun BookingFormScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Name Input
-        OutlinedTextField(
-            value = bookingViewModel.name,
-            onValueChange = { bookingViewModel.name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        CustomTextField("Name", bookingViewModel.name, { bookingViewModel.name = it }, errors["name"])
+        CustomTextField("Email", bookingViewModel.email, { bookingViewModel.email = it }, errors["email"], KeyboardType.Email)
+        CustomTextField("Phone Number", bookingViewModel.phoneNumber, { bookingViewModel.phoneNumber = it }, errors["phone"], KeyboardType.Phone)
+        CustomTextField("Street Address", bookingViewModel.streetAddress, {
+            bookingViewModel.streetAddress = it
+            bookingViewModel.fetchAddressSuggestions(it)
+        }, errors["address"])
 
-        // Email Input
-        OutlinedTextField(
-            value = bookingViewModel.email,
-            onValueChange = { bookingViewModel.email = it },
-            label = { Text("Email") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        // Phone Number Input
-        OutlinedTextField(
-            value = bookingViewModel.phoneNumber,
-            onValueChange = { bookingViewModel.phoneNumber = it },
-            label = { Text("Phone Number") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        // Street Address Input
-        OutlinedTextField(
-            value = bookingViewModel.streetAddress,
-            onValueChange = {
-                bookingViewModel.streetAddress = it
-                bookingViewModel.fetchAddressSuggestions(it)
-            },
-            label = { Text("Street Address") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        // Address Suggestions
         if (addressSuggestions.isNotEmpty()) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 addressSuggestions.forEach { suggestion ->
                     TextButton(onClick = {
                         bookingViewModel.streetAddress = suggestion
                     }) {
-                        Text(suggestion, color = MaterialTheme.colorScheme.primary)
+                        Text(suggestion)
                     }
                 }
             }
         }
 
-        // Postal Code Input
-        OutlinedTextField(
-            value = bookingViewModel.postalCode,
-            onValueChange = { bookingViewModel.postalCode = it },
-            label = { Text("Postal Code") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
+        CustomTextField("Postal Code", bookingViewModel.postalCode, { bookingViewModel.postalCode = it }, errors["postalCode"])
+        CustomTextField("City", bookingViewModel.city, { bookingViewModel.city = it }, errors["city"])
 
-        // City Input
-        OutlinedTextField(
-            value = bookingViewModel.city,
-            onValueChange = { bookingViewModel.city = it },
-            label = { Text("City") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        // Terms and Conditions
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+            modifier = Modifier.padding(top = 16.dp)
         ) {
             Checkbox(
                 checked = bookingViewModel.acceptTerms,
-                onCheckedChange = { bookingViewModel.acceptTerms = it },
-                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+                onCheckedChange = { bookingViewModel.acceptTerms = it }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text("I accept the terms and conditions", fontSize = 14.sp)
         }
-        if (!errorMessage.isNullOrBlank()) {
-            Text(
-                text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
+
+        bookingViewModel.errorMessage?.let {
+            Text(text = it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
         }
-        // Confirm Booking Button
+
         Button(
             onClick = {
                 bookingViewModel.saveBookingToFirestore(
-                    onSuccess = {
-                        onBookingDone()
-                    },
-                    onFailure = {
-                        // Show an error message, log, etc.
-                    }
+                    onSuccess = { onBookingDone() },
+                    onFailure = {}
                 )
             },
-
             enabled = bookingViewModel.acceptTerms,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 24.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                .padding(top = 24.dp)
         ) {
             Text("Confirm Booking")
+        }
+    }
+}
+
+@Composable
+fun CustomTextField(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    error: String? = null,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onChange,
+            label = { Text(label) },
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            isError = error != null,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        if (error != null) {
+            Text(text = error, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
         }
     }
 }

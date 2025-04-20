@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
 import android.location.Location
-import android.util.Log
+import android.util.Patterns
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -42,6 +42,7 @@ class BookingViewModel : ViewModel() {
     var acceptTerms by mutableStateOf(false)
 
     var errorMessage by mutableStateOf<String?>(null)
+    var fieldErrors by mutableStateOf(mapOf<String, String?>())
 
     private val _addressSuggestions = MutableStateFlow<List<String>>(emptyList())
     val addressSuggestions: StateFlow<List<String>> = _addressSuggestions
@@ -71,6 +72,24 @@ class BookingViewModel : ViewModel() {
         city = ""
         acceptTerms = false
         showInputFields = false
+        errorMessage = null
+        fieldErrors = emptyMap()
+    }
+
+    fun validateInputs(): Boolean {
+        val errors = mutableMapOf<String, String?>()
+
+        if (name.isBlank()) errors["name"] = "Name is required"
+        if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) errors["email"] = "Invalid email"
+        if (phoneNumber.isBlank()) errors["phone"] = "Phone number is required"
+        if (streetAddress.isBlank()) errors["address"] = "Street address is required"
+        if (postalCode.isBlank()) errors["postalCode"] = "Postal code is required"
+        if (city.isBlank()) errors["city"] = "City is required"
+        if (!acceptTerms) errorMessage = "You must accept terms to continue"
+        else errorMessage = null
+
+        fieldErrors = errors
+        return errors.isEmpty()
     }
 
     fun fetchAddressSuggestions(query: String) {
@@ -117,6 +136,8 @@ class BookingViewModel : ViewModel() {
             return
         }
 
+        if (!validateInputs()) return
+
         if (estimatedPrice == null) {
             errorMessage = "Please calculate the price first."
             return
@@ -136,7 +157,6 @@ class BookingViewModel : ViewModel() {
             bookingDateTime = formattedDateTime,
         )
 
-        // Add booking and then update with the Firestore-generated ID
         db.collection("bookings")
             .add(newBooking)
             .addOnSuccessListener { documentRef ->
@@ -145,16 +165,14 @@ class BookingViewModel : ViewModel() {
                         errorMessage = null
                         onSuccess()
                     }
-                    .addOnFailureListener { e ->
-                        Log.e("Firestore", "Failed to update ID field", e)
-                        errorMessage = "Booking saved, but failed to set ID."
-                        onFailure(e)
+                    .addOnFailureListener {
+                        errorMessage = "Booking saved, but failed to update ID."
+                        onFailure(it)
                     }
             }
-            .addOnFailureListener { e ->
-                Log.e("Firestore", "Error saving booking", e)
+            .addOnFailureListener {
                 errorMessage = "Failed to save booking. Please try again."
-                onFailure(e)
+                onFailure(it)
             }
     }
 }
