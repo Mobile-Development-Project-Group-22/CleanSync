@@ -11,13 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
-import com.example.cleansync.data.model.Notification
-import com.example.cleansync.navigation.BottomNavBar
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.utils.NotificationUtils
-import com.google.firebase.Timestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,42 +26,37 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val authState by authViewModel.authState.collectAsState()
-    val currentUser = authViewModel.currentUser
-    val showEmailVerificationDialog = remember { mutableStateOf(false) }
-    val unreadCount = notificationViewModel.unreadNotificationsCount()
+    // Manually create HomeViewModel using provided dependencies
+    val homeViewModel = remember { HomeViewModel(authViewModel, notificationViewModel) }
+    val showEmailDialog by homeViewModel.showEmailVerificationDialog.collectAsStateWithLifecycle()
+    val currentUser = homeViewModel.currentUser
     val context = LocalContext.current
 
-    // Check user session and email verification
-    LaunchedEffect(authViewModel.isLoggedIn) {
-        if (!authViewModel.isLoggedIn) {
-            authViewModel.signOut()
+    // Trigger logout if not logged in
+    LaunchedEffect(homeViewModel.isLoggedIn) {
+        if (!homeViewModel.isLoggedIn) {
             onLogout()
-        } else if (!authViewModel.isEmailVerified) {
-            showEmailVerificationDialog.value = true
         }
     }
 
-    // Show email verification prompt
-    if (showEmailVerificationDialog.value) {
+    // Show email verification dialog
+    if (showEmailDialog) {
         AlertDialog(
-            onDismissRequest = { showEmailVerificationDialog.value = false },
+            onDismissRequest = { homeViewModel.dismissEmailDialog() },
             title = { Text("Email Verification") },
             text = { Text("Please verify your email to continue.") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        authViewModel.resendVerificationEmail()
-                        showEmailVerificationDialog.value = false
+                        homeViewModel.resendVerificationEmail()
+                        homeViewModel.dismissEmailDialog()
                     }
                 ) {
                     Text("Resend Verification Email")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { showEmailVerificationDialog.value = false }
-                ) {
+                TextButton(onClick = { homeViewModel.dismissEmailDialog() }) {
                     Text("OK")
                 }
             }
@@ -75,7 +67,7 @@ fun HomeScreen(
         topBar = {
             HomeAppBar(
                 userName = currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User",
-                unreadCount = unreadCount,
+                unreadCount = homeViewModel.unreadNotificationCount(),
                 onNotificationClick = onNavigateToNotifications,
                 onProfileClick = onNavigateToProfile
             )
@@ -85,12 +77,11 @@ fun HomeScreen(
                 modifier = Modifier.padding(innerPadding),
                 onBookingClick = onNavigateToBooking,
                 onLogoutClick = {
-                    authViewModel.signOut()
+                    homeViewModel.signOut()
                     onLogout()
                 },
             )
         },
-
     )
 }
 
@@ -169,7 +160,7 @@ private fun HomeContent(
         }
 
         OutlinedButton(
-            onClick ={
+            onClick = {
                 NotificationUtils.triggerNotification(
                     context = context,
                     title = "Test Notification",
@@ -202,7 +193,3 @@ private fun HomeContent(
         Spacer(modifier = Modifier.height(8.dp))
     }
 }
-
-
-
-
