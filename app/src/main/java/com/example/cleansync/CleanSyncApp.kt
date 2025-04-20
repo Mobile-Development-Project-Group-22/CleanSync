@@ -180,7 +180,7 @@ fun AppNavHost(
 
         composable(Screen.MyBookingsScreen.route) {
             MyBookingsScreen(
-                bookingViewModel = bookingViewModel,
+                viewModel = bookingViewModel,
             )
         }
 
