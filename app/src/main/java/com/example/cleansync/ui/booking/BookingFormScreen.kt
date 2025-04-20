@@ -40,7 +40,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun BookingFormScreen(
-    bookingViewModel: BookingViewModel = viewModel(),
+    bookingViewModel: BookingViewModel,
     onBookingDone: () -> Unit
 ) {
     val context = LocalContext.current
