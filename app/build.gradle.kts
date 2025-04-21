@@ -117,6 +117,8 @@ dependencies {
     implementation("androidx.compose.material:material:1.7.8") // or latest
     implementation("com.google.accompanist:accompanist-swiperefresh:0.31.5-beta") // or latest
 
+//    work manager for background tasks
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
 // data store
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
