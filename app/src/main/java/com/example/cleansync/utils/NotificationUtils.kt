@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -172,6 +173,8 @@ object NotificationUtils {
     }
 }
 
+
+
 object NotificationScheduler {
 
     fun scheduleReminderNotification(
@@ -188,8 +191,28 @@ object NotificationScheduler {
         val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
             .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
             .setInputData(data)
+            .addTag("booking_reminder")
             .build()
 
-        WorkManager.getInstance(context).enqueue(workRequest)
+        WorkManager.getInstance(context)
+            .enqueue(workRequest)
+
+        // Optional: log scheduled work for debugging
+        WorkManager.getInstance(context)
+            .getWorkInfosByTag("booking_reminder")
+            .addListener({
+                try {
+                    val workInfos = WorkManager.getInstance(context)
+                        .getWorkInfosByTag("booking_reminder")
+                        .get()
+                    workInfos.forEach { info ->
+                        Log.d("NotificationScheduler", "Work ID: ${info.id}, State: ${info.state}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("NotificationScheduler", "Error retrieving work info: ${e.message}")
+                }
+            }, ContextCompat.getMainExecutor(context))
+
+        Log.d("NotificationScheduler", "Scheduled notification with delay: $delayMillis ms")
     }
 }
