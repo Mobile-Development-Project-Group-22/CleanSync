@@ -49,9 +49,8 @@ fun PasswordResetScreen(
             NotificationUtils.triggerNotification(
                 context = context,
                 title = "Password Reset",
-                message = "A password reset link has been sent to $email",
-                isForgotPassword = true,  // Flag to indicate this is a password reset
-                email = email
+                message = "A password reset link has been sent to $email.",
+                scheduleTimeMillis = System.currentTimeMillis() + 5000 // 5 seconds from now
             )
         }
     }
