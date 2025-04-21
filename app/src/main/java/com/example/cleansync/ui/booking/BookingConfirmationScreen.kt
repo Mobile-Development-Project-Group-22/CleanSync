@@ -39,8 +39,8 @@ fun BookingConfirmationScreen(
             val reminderTimeMillis = bookingTimeMillis - 3600000L // 1 hour before
             val now = System.currentTimeMillis()
 
-//            val delayMillis = reminderTimeMillis - now
-            val delayMillis = 10_000L // 10 seconds for testing
+            val delayMillis = reminderTimeMillis - now
+//            val delayMillis = 10_000L // 10 seconds for testing
 
             if (delayMillis > 0) {
                 NotificationScheduler.scheduleReminderNotification(
