@@ -1,8 +1,10 @@
 package com.example.cleansync.ui.notifications
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.cleansync.data.model.Notification
+import com.example.cleansync.utils.NotificationUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -35,6 +37,9 @@ class NotificationViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Subscribe to notifications using Firebase Cloud Messaging (FCM).
+     */
     private fun subscribeToNotifications() {
         FirebaseMessaging.getInstance().subscribeToTopic("notifications")
             .addOnCompleteListener { task ->
@@ -46,6 +51,9 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Fetch notifications from Firestore for the authenticated user.
+     */
     private fun fetchNotifications() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
@@ -57,8 +65,6 @@ class NotificationViewModel : ViewModel() {
             .whereEqualTo("userId", currentUser.uid)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
-
-
                 if (snapshot == null || snapshot.isEmpty) {
                     _notificationState.value = emptyList()
                     Log.d("NotificationVM", "No notifications found")
@@ -78,6 +84,9 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Add a new notification to Firestore.
+     */
     fun addNotification(notification: Notification) {
         auth.currentUser?.uid?.let { uid ->
             val withUser = notification.copy(userId = uid)
@@ -94,20 +103,55 @@ class NotificationViewModel : ViewModel() {
         }
     }
 
+    /**
+     * Trigger a notification using the NotificationUtils, both for immediate and scheduled notifications.
+     */
+    fun triggerNotification(
+        context: Context,
+        title: String,
+        message: String,
+        appointmentTimeMillis: Long? = null,
+        read: Boolean = false,
+        scheduleTimeMillis: Long? = null,
+        isForgotPassword: Boolean = false
+    ) {
+        NotificationUtils.triggerNotification(
+            context,
+            title,
+            message,
+            appointmentTimeMillis,
+            read,
+            scheduleTimeMillis,
+            isForgotPassword
+        )
+    }
+
+    /**
+     * Toggle the read status of a notification.
+     */
     fun toggleReadStatus(notification: Notification) {
         updateNotificationField(notification, "read", !notification.read)
     }
 
+    /**
+     * Mark a specific notification as read.
+     */
     fun markNotificationAsRead(notification: Notification) {
         updateNotificationField(notification, "read", true)
     }
 
+    /**
+     * Remove a specific notification.
+     */
     fun removeNotification(notification: Notification) {
         updateNotificationIfAuthorized(notification) {
             notificationsRef.document(notification.id).delete()
         }
     }
 
+    /**
+     * Clear all notifications for the current user.
+     */
     fun clearAllNotifications() {
         val uid = auth.currentUser?.uid ?: return
         notificationsRef.whereEqualTo("userId", uid).get()
@@ -122,20 +166,35 @@ class NotificationViewModel : ViewModel() {
             }
     }
 
+    /**
+     * Get the count of unread notifications.
+     */
     fun unreadNotificationsCount(): Int = _notificationState.value.count { !it.read }
 
+    /**
+     * Refresh notifications by fetching them again from Firestore.
+     */
     fun refreshNotifications() = fetchNotifications()
 
+    /**
+     * Clear any error messages.
+     */
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
 
+    /**
+     * Update a specific field of a notification (e.g., read status).
+     */
     private fun updateNotificationField(notification: Notification, field: String, value: Any) {
         updateNotificationIfAuthorized(notification) {
             notificationsRef.document(notification.id).update(field, value)
         }
     }
 
+    /**
+     * Ensure the user is authorized to modify the notification.
+     */
     private fun updateNotificationIfAuthorized(notification: Notification, operation: () -> Unit) {
         val uid = auth.currentUser?.uid
         if (uid != null && notification.userId == uid) {

@@ -84,14 +84,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         // Build the notification with custom sound and vibration
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.drawable.ic_notification) // Ensure this drawable exists
-            .setContentTitle("New Message") // Set title as fixed or dynamic
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(message) // Set title as fixed or dynamic
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setVibrate(longArrayOf(0, 200, 100, 200))
-            .setSound(Uri.parse("android.resource://$packageName/raw/custom_sound"))
+            .setSound(Uri.parse("android.resource://$packageName/raw/notification_alert_269289")) // Ensure this sound file exists
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -110,6 +110,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // Issue the notification
         notificationManager.notify(notificationId.hashCode(), notificationBuilder.build())
     }
+
 
     private fun saveNotificationToFirestore(userId: String, message: String) {
         val notification = Notification(

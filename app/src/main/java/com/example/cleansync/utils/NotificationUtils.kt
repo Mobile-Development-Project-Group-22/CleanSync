@@ -1,6 +1,5 @@
 package com.example.cleansync.utils
 
-import android.Manifest
 import android.app.*
 import android.content.Context
 import android.content.Intent
@@ -8,18 +7,19 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.example.cleansync.MainActivity
 import com.example.cleansync.R
 import com.example.cleansync.data.model.Notification
 import com.example.cleansync.data.service.LocalNotificationReceiver
-import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.Timestamp
 import java.util.*
-
-
+import java.util.concurrent.TimeUnit
 
 object NotificationUtils {
 
@@ -37,7 +37,6 @@ object NotificationUtils {
         appointmentTimeMillis: Long? = null, // Optional, for scheduled notifications
         read: Boolean = false,
         scheduleTimeMillis: Long? = null,
-        email: String? = null,
         isForgotPassword: Boolean = false
     ) {
         // Save to Firestore only for persistent notifications (not for temporary ones like "forgot password")
@@ -50,8 +49,7 @@ object NotificationUtils {
             }
         }
 
-        val notificationTimeMillis = appointmentTimeMillis?.let { it - 3600000L }
-
+        // Schedule or send notification based on scheduleTimeMillis
         if (scheduleTimeMillis != null) {
             Log.d(TAG, "Scheduling notification for future: $scheduleTimeMillis")
             scheduleLocalNotification(context, title, message, scheduleTimeMillis)
@@ -59,10 +57,7 @@ object NotificationUtils {
             Log.d(TAG, "Sending notification immediately")
             sendCustomNotification(context, title, message)
         }
-
-
     }
-
 
     /**
      * Send a custom notification immediately.
@@ -74,7 +69,6 @@ object NotificationUtils {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
-        // Re-use a consistent request code for the notification to avoid unnecessary new instances
         val pendingIntent = PendingIntent.getActivity(
             context, title.hashCode(), intent, PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -92,14 +86,13 @@ object NotificationUtils {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createChannelIfNeeded(manager)
 
-        manager.notify(title.hashCode(), builder.build())  // Use title.hashCode() to create a consistent notification ID
+        manager.notify(title.hashCode(), builder.build())
         Log.d(TAG, "Notification sent.")
     }
-
     /**
      * Schedule a notification for a specific time.
      */
-    fun scheduleLocalNotification(context: Context, title: String, message: String, timeInMillis: Long) {
+    private fun scheduleLocalNotification(context: Context, title: String, message: String, timeInMillis: Long) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             if (!alarmManager.canScheduleExactAlarms()) {
@@ -133,22 +126,15 @@ object NotificationUtils {
     /**
      * Save the notification to Firestore for a user.
      */
-    fun saveNotificationToFirestore(userId: String?, message: String) {
-        // If userId is null, it might be a password reset, so we need to check
-        val email = FirebaseAuth.getInstance().currentUser?.email
-
-        // If both userId and email are null, don't save the notification
-        if (userId.isNullOrEmpty() && email.isNullOrEmpty()) {
+    private fun saveNotificationToFirestore(userId: String?, message: String) {
+        val notificationUserId = userId ?: FirebaseAuth.getInstance().currentUser?.email
+        if (notificationUserId.isNullOrEmpty()) {
             Log.w(TAG, "Both user ID and email are null or empty. Notification not saved.")
             return
         }
 
-        val notificationUserId = userId ?: email // Use email as a fallback if user is not authenticated
-
-        Log.d(TAG, "Saving notification to Firestore for user: $notificationUserId")
-
         val notification = Notification(
-            userId = notificationUserId ?: "",
+            userId = notificationUserId,
             message = message,
             read = false,
             timestamp = Timestamp.now()
@@ -184,6 +170,26 @@ object NotificationUtils {
             }
         }
     }
+}
 
+object NotificationScheduler {
 
+    fun scheduleReminderNotification(
+        context: Context,
+        delayMillis: Long,
+        title: String,
+        message: String
+    ) {
+        val data = workDataOf(
+            "title" to title,
+            "message" to message
+        )
+
+        val workRequest = OneTimeWorkRequestBuilder<NotificationWorker>()
+            .setInitialDelay(delayMillis, TimeUnit.MILLISECONDS)
+            .setInputData(data)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
 }

@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleansync.utils.DateTimeUtils.toEpochMillis
+import com.example.cleansync.utils.NotificationScheduler
 import com.example.cleansync.utils.NotificationUtils
 import java.time.format.DateTimeFormatter
 
@@ -35,17 +36,18 @@ fun BookingConfirmationScreen(
     LaunchedEffect(Unit) {
         selectedDateTime?.let {
             val bookingTimeMillis = it.toEpochMillis()
-            val reminderTimeMillis = bookingTimeMillis - 3600000L  // 1 hour before
-
+            val reminderTimeMillis = bookingTimeMillis - 3600000L // 1 hour before
             val now = System.currentTimeMillis()
-            Log.d("BookingConfirmationScreen", "Now: $now, Scheduled: $reminderTimeMillis")
 
-            if (reminderTimeMillis > now) {
-                NotificationUtils.triggerNotification(
+//            val delayMillis = reminderTimeMillis - now
+            val delayMillis = 10_000L // 10 seconds for testing
+
+            if (delayMillis > 0) {
+                NotificationScheduler.scheduleReminderNotification(
                     context = context,
+                    delayMillis = delayMillis,
                     title = "Appointment Reminder",
-                    message = "Your booking is in 1 hour. Time: $formattedDateTime",
-                    scheduleTimeMillis = reminderTimeMillis
+                    message = "Your booking is in 1 hour. Time: $formattedDateTime"
                 )
             } else {
                 Log.w("BookingConfirmationScreen", "Reminder time is in the past. Skipping notification.")
