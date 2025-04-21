@@ -6,10 +6,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.example.cleansync.model.Booking
+import com.example.cleansync.utils.NotificationScheduler
+import com.firebase.ui.auth.BuildConfig
+import java.util.*
 
 @Composable
 fun BookingCard(
@@ -19,6 +25,8 @@ fun BookingCard(
     onEdit: () -> Unit,
     onCancel: () -> Unit
 ) {
+    var showDebugDialog by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -33,8 +41,7 @@ fun BookingCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "📅 ${booking.bookingDateTime}",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleMedium
             )
             Text(
                 text = "🏠 ${booking.streetAddress}",
@@ -87,9 +94,113 @@ fun BookingCard(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Cancel")
                     }
+
+                    if (BuildConfig.DEBUG) {
+                        OutlinedButton(
+                            onClick = { showDebugDialog = true },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.secondary
+                            )
+                        ) {
+                            Text("🔧 Dev")
+                        }
+                    }
                 }
             }
         }
     }
+
+    if (showDebugDialog) {
+        NotificationDebugDialog(onDismiss = { showDebugDialog = false })
+    }
 }
 
+@Composable
+fun NotificationDebugDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    var workInfos by remember { mutableStateOf<List<WorkInfo>>(emptyList()) }
+    var filterDate by remember { mutableStateOf("") }
+
+    // Fetch workInfo from WorkManager when the dialog opens
+    LaunchedEffect(Unit) {
+        workInfos = WorkManager.getInstance(context)
+            .getWorkInfosByTag("booking_reminder")
+            .get()  // Use get() to block and return results (for debug)
+    }
+
+    // Filter by booking date when user updates filter
+    val filteredWorkInfos = if (filterDate.isNotEmpty()) {
+        workInfos.filter { workInfo ->
+            // Check if the booking time matches the filter (we assume it's a string)
+            val workInfoDate = workInfo.tags.find { it.contains(filterDate) }
+            workInfoDate != null
+        }
+    } else {
+        workInfos
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+        title = { Text("🔧 Scheduled Notifications") },
+        text = {
+            Column {
+                // Filter UI
+                TextField(
+                    value = filterDate,
+                    onValueChange = { filterDate = it },
+                    label = { Text("Filter by booking date") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (filteredWorkInfos.isEmpty()) {
+                    Text("No scheduled notifications found.")
+                } else {
+                    filteredWorkInfos.forEach { info ->
+                        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                            Text("ID: ${info.id}")
+                            Text("State: ${info.state.name}")
+                            Text("Run Attempts: ${info.runAttemptCount}")
+
+                            // Cancel button
+                            OutlinedButton(
+                                onClick = {
+                                    // Cancel the scheduled notification
+                                    WorkManager.getInstance(context)
+                                        .cancelWorkById(info.id)
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Text("Cancel")
+                            }
+
+                            // Reschedule button
+                            OutlinedButton(
+                                onClick = {
+                                    // Reschedule with updated delay (example: 10 seconds)
+                                    val newDelayMillis = 10 * 1000L // 10 seconds delay for testing
+                                    NotificationScheduler.scheduleReminderNotification(
+                                        context = context,
+                                        delayMillis = newDelayMillis,
+                                        title = "Rescheduled Reminder",
+                                        message = "Your booking is rescheduled."
+                                    )
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text("Reschedule")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    )
+}
