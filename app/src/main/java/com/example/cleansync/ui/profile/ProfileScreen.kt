@@ -32,7 +32,6 @@ fun ProfileScreen(
     val currentUser = profileViewModel.currentUser
     val context = LocalContext.current
 
-    var isDarkMode by remember { mutableStateOf(false) }
 
     // States for dialogs and preferences
     var showUpdateProfileDialog by remember { mutableStateOf(false) }
@@ -47,6 +46,21 @@ fun ProfileScreen(
     var confirmNewPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val darkModeFlow = remember { ThemePreferenceManager.getDarkMode(context) }
+    val darkModePref by darkModeFlow.collectAsState(initial = false)
+
+    var isDarkMode by remember { mutableStateOf(darkModePref) }
+    var shouldSaveTheme by remember { mutableStateOf(false) }
+
+    // Observe changes in dark mode preference
+     LaunchedEffect(shouldSaveTheme) {
+        if (shouldSaveTheme) {
+            ThemePreferenceManager.saveDarkMode(context, isDarkMode)
+            shouldSaveTheme = false
+        }
+    }
+
 
     // Check if user has password provider
     val hasPasswordProvider = currentUser?.providerData?.any {
@@ -109,40 +123,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Show password status only if user has password provider
-            if (hasPasswordProvider) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Password: ******",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Password-related buttons (only show if user has password provider)
-            if (hasPasswordProvider) {
-                Button(
-                    onClick = { showChangePasswordDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = Color.White
-                    ),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = ButtonDefaults.buttonElevation(4.dp)
-                ) {
-                    Text(text = "Change Password", style = MaterialTheme.typography.labelLarge)
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
 
             // Dark Mode Toggle
             Row(
@@ -156,15 +137,17 @@ fun ProfileScreen(
                 )
                 Switch(
                     checked = isDarkMode,
-                    onCheckedChange = {
-                        isDarkMode = it
-                        onThemeToggle(it)
+                    onCheckedChange = { isChecked ->
+                        isDarkMode = isChecked
+                        onThemeToggle(isChecked)
+                        shouldSaveTheme = true
                     },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.background,
                         uncheckedThumbColor = MaterialTheme.colorScheme.primary
                     )
                 )
+
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -218,162 +201,200 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Delete Account Button
-            Button(
-                onClick = { showDeleteDialog = true },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = Color.White
-                ),
-                shape = MaterialTheme.shapes.medium,
-                elevation = ButtonDefaults.buttonElevation(4.dp)
-            ) {
-                Text(text = "Delete Account", style = MaterialTheme.typography.labelLarge)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Logout Button
-            Button(
-                onClick = {
-                    profileViewModel.signOut()
-                    onLogout()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
-                ),
-                shape = MaterialTheme.shapes.medium,
-                elevation = ButtonDefaults.buttonElevation(4.dp)
-            ) {
-                Text(text = "Logout", style = MaterialTheme.typography.labelLarge)
-            }
-        }
-
-        LaunchedEffect(profileState) {
-            when (profileState) {
-                is ProfileState.Error -> {
-                    Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
+            // Password-related buttons (only show if user has password provider)
+            if (hasPasswordProvider) {
+                Button(
+                    onClick = { showChangePasswordDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
+                ) {
+                    Text(text = "Change Password", style = MaterialTheme.typography.labelLarge)
                 }
-                is ProfileState.Success -> {
-                    if (profileState.user == null) {
-                        onNavigateToLogin()
-                    } else {
-                        Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_LONG).show()
+
+
+                Spacer(
+                    modifier = Modifier.height(16.dp)
+                )
+                // Delete Account Button
+                Button(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
+                ) {
+                    Text(text = "Delete Account", style = MaterialTheme.typography.labelLarge)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Logout Button
+                Button(
+                    onClick = {
+                        profileViewModel.signOut()
+                        onLogout()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    ),
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = ButtonDefaults.buttonElevation(4.dp)
+                ) {
+                    Text(text = "Logout", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            LaunchedEffect(profileState) {
+                when (profileState) {
+                    is ProfileState.Error -> {
+                        Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
+                    }
+
+                    is ProfileState.Success -> {
+                        if (profileState.user == null) {
+                            onNavigateToLogin()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Profile updated successfully",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+
+                    else -> {
+                        // Do nothing
                     }
                 }
-                else -> {
-                    // Do nothing
-                }
             }
-        }
 
-        // Dialogs for password change, delete, etc.
+            // Dialogs for password change, delete, etc.
 
-        // Change Password Dialog
-        if (showChangePasswordDialog) {
-            ChangePasswordDialog(
-                currentPassword = currentPassword,
-                newPassword = newPassword,
-                confirmNewPassword = confirmNewPassword,
-                onCurrentPasswordChange = { currentPassword = it },
-                onNewPasswordChange = { newPassword = it },
-                onConfirmNewPasswordChange = { confirmNewPassword = it },
-                errorMessage = errorMessage,
-                onDismiss = { showChangePasswordDialog = false },
-                onConfirm = {
-                    if (newPassword == confirmNewPassword && newPassword.isNotEmpty()) {
-                        profileViewModel.changePassword(
-                            currentPassword = currentPassword,
-                            newPassword = newPassword,
+            // Change Password Dialog
+            if (showChangePasswordDialog) {
+                ChangePasswordDialog(
+                    currentPassword = currentPassword,
+                    newPassword = newPassword,
+                    confirmNewPassword = confirmNewPassword,
+                    onCurrentPasswordChange = { currentPassword = it },
+                    onNewPasswordChange = { newPassword = it },
+                    onConfirmNewPasswordChange = { confirmNewPassword = it },
+                    errorMessage = errorMessage,
+                    onDismiss = { showChangePasswordDialog = false },
+                    onConfirm = {
+                        if (newPassword == confirmNewPassword && newPassword.isNotEmpty()) {
+                            profileViewModel.changePassword(
+                                currentPassword = currentPassword,
+                                newPassword = newPassword,
+                                onSuccess = {
+                                    Toast.makeText(
+                                        context,
+                                        "Password changed successfully",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                },
+                                onFailure = { error ->
+                                    errorMessage = error
+                                }
+                            )
+                            showChangePasswordDialog = false
+                        } else {
+                            errorMessage = "Passwords do not match or are empty"
+                        }
+                    }
+                )
+            }
+
+            // Add Password Dialog
+            if (showAddPasswordDialog) {
+                AddPasswordDialog(
+                    onAddPassword = { password ->
+                        profileViewModel.addPasswordToUser(
+                            password = password,
                             onSuccess = {
-                                Toast.makeText(context, "Password changed successfully", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context,
+                                    "Password added successfully",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             },
                             onFailure = { error ->
                                 errorMessage = error
                             }
                         )
-                        showChangePasswordDialog = false
-                    } else {
-                        errorMessage = "Passwords do not match or are empty"
-                    }
-                }
-            )
-        }
+                        showAddPasswordDialog = false
+                    },
+                    onDismiss = { showAddPasswordDialog = false }
+                )
+            }
 
-        // Add Password Dialog
-        if (showAddPasswordDialog) {
-            AddPasswordDialog(
-                onAddPassword = { password ->
-                    profileViewModel.addPasswordToUser(
-                        password = password,
-                        onSuccess = {
-                            Toast.makeText(context, "Password added successfully", Toast.LENGTH_LONG).show()
-                        },
-                        onFailure = { error ->
-                            errorMessage = error
-                        }
-                    )
-                    showAddPasswordDialog = false
-                },
-                onDismiss = { showAddPasswordDialog = false }
-            )
-        }
+            // Delete Password Dialog
+            if (showDeletePasswordDialog) {
+                DeletePasswordDialog(
+                    currentPassword = currentPassword,
+                    onPasswordChange = { currentPassword = it },
+                    errorMessage = errorMessage,
+                    onDismiss = { showDeletePasswordDialog = false },
+                    onConfirm = {
+                        profileViewModel.deletePassword(
+                            currentPassword = currentPassword,
+                            onSuccess = {
+                                Toast.makeText(
+                                    context,
+                                    "Password deleted successfully",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            },
+                            onFailure = { error ->
+                                errorMessage = error
+                            }
+                        )
+                        showDeletePasswordDialog = false
+                    },
+                    showWarning = !hasPasswordProvider
+                )
+            }
 
-        // Delete Password Dialog
-        if (showDeletePasswordDialog) {
-            DeletePasswordDialog(
-                currentPassword = currentPassword,
-                onPasswordChange = { currentPassword = it },
-                errorMessage = errorMessage,
-                onDismiss = { showDeletePasswordDialog = false },
-                onConfirm = {
-                    profileViewModel.deletePassword(
-                        currentPassword = currentPassword,
-                        onSuccess = {
-                            Toast.makeText(context, "Password deleted successfully", Toast.LENGTH_LONG).show()
-                        },
-                        onFailure = { error ->
-                            errorMessage = error
-                        }
-                    )
-                    showDeletePasswordDialog = false
-                },
-                showWarning = !hasPasswordProvider
-            )
-        }
-
-        // Delete Account Dialog
-        if (showDeleteDialog) {
-            DeleteAccountDialog(
-                isGoogleProvider = currentUser?.providerData?.any {
-                    it.providerId == GoogleAuthProvider.PROVIDER_ID
-                } == true,
-                currentPassword = currentPassword,
-                onPasswordChange = { currentPassword = it },
-                errorMessage = errorMessage,
-                onDismiss = { showDeleteDialog = false },
-                onConfirm = {
-                    profileViewModel.reAuthenticateAndDeleteUser(
-                        password = currentPassword,
-                        onSuccess = {
-                            Toast.makeText(
-                                context,
-                                "Account deleted successfully",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        },
-                        context = context,
-                        onFailure = { error ->
-                            errorMessage = error
-                        }
-                    )
-                    showDeleteDialog = false
-                    onNavigateToLogin()
-                },
-                isLoading = CircularProgressIndicator()
-            )
+            // Delete Account Dialog
+            if (showDeleteDialog) {
+                DeleteAccountDialog(
+                    isGoogleProvider = currentUser?.providerData?.any {
+                        it.providerId == GoogleAuthProvider.PROVIDER_ID
+                    } == true,
+                    currentPassword = currentPassword,
+                    onPasswordChange = { currentPassword = it },
+                    errorMessage = errorMessage,
+                    onDismiss = { showDeleteDialog = false },
+                    onConfirm = {
+                        profileViewModel.reAuthenticateAndDeleteUser(
+                            password = currentPassword,
+                            onSuccess = {
+                                Toast.makeText(
+                                    context,
+                                    "Account deleted successfully",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            },
+                            context = context,
+                            onFailure = { error ->
+                                errorMessage = error
+                            }
+                        )
+                        showDeleteDialog = false
+                        onNavigateToLogin()
+                    },
+                    isLoading = CircularProgressIndicator()
+                )
+            }
         }
     }
 }
