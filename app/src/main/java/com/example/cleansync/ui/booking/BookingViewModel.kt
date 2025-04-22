@@ -8,6 +8,8 @@ import android.util.Patterns
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cleansync.data.model.EmailRequest
+import com.example.cleansync.data.repository.EmailRepository
 import com.example.cleansync.model.Booking
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -24,6 +26,11 @@ class BookingViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+
+    private val emailRepository = EmailRepository()
+
+    var isSendingEmail by mutableStateOf(false)
+    var emailSentSuccess by mutableStateOf<Boolean?>(null)
 
     var length by mutableStateOf("")
     var width by mutableStateOf("")
@@ -129,6 +136,40 @@ class BookingViewModel : ViewModel() {
         selectedDateTime = dateTime
     }
 
+    fun sendBookingConfirmationEmail() {
+        val bookingDetails = """
+        Booking Details:
+        Name: $name
+        Address: $streetAddress, $postalCode $city
+        Date & Time: $formattedDateTime
+        Price: $estimatedPrice €
+    """.trimIndent()
+
+        val emailRequest = EmailRequest(
+            personalizations = listOf(
+                mapOf(
+                    "to" to listOf(mapOf("email" to email)),
+                    "subject" to "Booking Confirmation"
+                )
+            ),
+            from = mapOf("email" to "t3shro00@students.oamk.fi"),  // Your sender email
+            content = listOf(
+                mapOf("type" to "text/plain", "value" to "Thank you for your booking!\n\n$bookingDetails")
+            )
+        )
+
+        viewModelScope.launch {
+            isSendingEmail = true
+            val result = emailRepository.sendConfirmationEmail(emailRequest)
+            isSendingEmail = false
+            if (result) {
+                emailSentSuccess = true
+            } else {
+                errorMessage = "Failed to send confirmation email."
+            }
+        }
+    }
+
     fun saveBookingToFirestore(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         val userId = auth.currentUser?.uid
         if (userId == null) {
@@ -163,6 +204,7 @@ class BookingViewModel : ViewModel() {
                 documentRef.update("id", documentRef.id)
                     .addOnSuccessListener {
                         errorMessage = null
+                        sendBookingConfirmationEmail()
                         onSuccess()
                     }
                     .addOnFailureListener {

@@ -88,6 +88,7 @@ dependencies {
     implementation(libs.converter.gson) // Gson converter
     implementation(libs.logging.interceptor) // OkHttp logging interceptor
 
+    implementation ("com.squareup.okhttp3:okhttp:4.11.0")
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
@@ -121,6 +122,9 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.10.0")
 // data store
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Required for ListenableFuture
+    implementation("com.google.guava:guava:31.0.1-android")
 
     // Testing
     testImplementation(libs.junit)

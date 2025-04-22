@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
+import com.example.cleansync.ui.booking.BookingViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 fun HomeScreen(
     authViewModel: AuthViewModel,
     notificationViewModel: NotificationViewModel,
+    bookingViewModel: BookingViewModel,
     onNavigateToBooking: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToProfile: () -> Unit,
@@ -49,12 +51,43 @@ fun HomeScreen(
     val currentUser = homeViewModel.currentUser
     val context = LocalContext.current
 
+
+    val isSendingEmail = bookingViewModel.isSendingEmail
+    val emailSentSuccess = bookingViewModel.emailSentSuccess
+
     LaunchedEffect(homeViewModel.isLoggedIn) {
         if (!homeViewModel.isLoggedIn) {
             onLogout()
         }
     }
+    // Email Status Dialog
+    if (isSendingEmail || emailSentSuccess != null) {
+        val message = when {
+            isSendingEmail -> "Sending your booking confirmation..."
+            emailSentSuccess == true -> "Your booking confirmation email was sent successfully!"
+            emailSentSuccess == false -> "Failed to send the booking confirmation email. Please try again."
+            else -> ""
+        }
 
+        AlertDialog(
+            onDismissRequest = { /* Handle dismiss if needed */ },
+            title = { Text("Booking Confirmation Email Status") },
+            text = {
+                Column {
+                    if (isSendingEmail) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = message, style = MaterialTheme.typography.bodyMedium)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { /* Handle dismiss action */ }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
     if (showEmailDialog) {
         AlertDialog(
             onDismissRequest = { homeViewModel.dismissEmailDialog() },
