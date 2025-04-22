@@ -15,3 +15,4 @@ interface EmailService {
     suspend fun sendEmail(@Body emailRequest: EmailRequest): Response<Void>
 }
 
+//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
