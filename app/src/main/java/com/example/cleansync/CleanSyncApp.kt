@@ -63,7 +63,9 @@ fun MainScreen(
         Screen.HomeScreen.route,
         Screen.MyBookingsScreen.route,
         Screen.NotificationScreen.route,
-        Screen.ProfileScreen.route
+        Screen.ProfileScreen.route,
+        Screen.BookingStartScreen.route,
+        Screen.BookingFormScreen.route
     )
 
     Scaffold(
