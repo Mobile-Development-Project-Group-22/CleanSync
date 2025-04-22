@@ -130,13 +130,9 @@ fun MyBookingsScreen(viewModel: BookingViewModel) {
                                 val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                                 val id = bookingToCancel!!.id!!
                                 Log.d("CancelBooking", "Attempting to delete booking with ID: $id")
-                                Log.d("CancelBooking", "Current User ID: $currentUserId")
-                                Log.d("CancelBooking", "Booking's User ID: ${bookingToCancel!!.userId}")
-
                                 db.collection("bookings").document(id).delete().await()
                                 bookings = bookings.filterNot { it.id == id }
                                 snackbarHostState.showSnackbar("Booking canceled.")
-                                Log.d("CancelBooking", "Delete successful")
                             } catch (e: Exception) {
                                 Log.e("CancelBooking", "Delete failed: ${e.message}", e)
                                 snackbarHostState.showSnackbar("Failed to cancel booking.")

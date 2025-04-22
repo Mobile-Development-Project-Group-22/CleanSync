@@ -13,5 +13,7 @@ data class Booking(
     val estimatedPrice: Float = 0f,
     val bookingDateTime: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    var id: String? = null // 🔥 Add this line to hold Firestore document ID
+    var id: String? = null,
+    var progressStage: String = "booked"
+
 )
