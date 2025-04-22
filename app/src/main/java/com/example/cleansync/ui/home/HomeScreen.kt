@@ -296,23 +296,40 @@ private fun HomeContent(
 
     if (showDialog && selectedDate != null) {
         val bookingsOnDate = bookingsByDate[selectedDate] ?: emptyList()
+
         AlertDialog(
             onDismissRequest = { showDialog = false },
             title = { Text("Bookings on ${selectedDate.toString()}") },
             text = {
-                Column {
-                    bookingsOnDate.forEach {
-                        Text("• ${it.name} at ${it.bookingDateTime}", style = MaterialTheme.typography.bodyMedium)
+                if (bookingsOnDate.isNotEmpty()) {
+                    Column {
+                        bookingsOnDate.forEach {
+                            Text("• ${it.name} at ${it.bookingDateTime}", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
+                } else {
+                    Text("No bookings on this day.", style = MaterialTheme.typography.bodyMedium)
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showDialog = false }) {
-                    Text("Close")
+                if (bookingsOnDate.isEmpty()) {
+                    TextButton(
+                        onClick = {
+                            showDialog = false
+                            onBookingClick() // 👈 Navigate to Booking screen
+                        }
+                    ) {
+                        Text("Book Now")
+                    }
+                } else {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Close")
+                    }
                 }
             }
         )
     }
+
 }
 
 @Composable
