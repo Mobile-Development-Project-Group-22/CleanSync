@@ -231,7 +231,12 @@ fun AppNavHost(
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 },
-                onThemeToggle = onThemeToggle
+                onThemeToggle = onThemeToggle,
+                onNavigateToBookings = {
+                    navController.navigate(Screen.MyBookingsScreen.route) {
+                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                    }
+                }
 
             )
         }

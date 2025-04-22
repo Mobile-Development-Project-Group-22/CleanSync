@@ -13,9 +13,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.google.firebase.auth.GoogleAuthProvider
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.ui.window.Dialog
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +31,8 @@ fun ProfileScreen(
     preferencesViewModel: NotificationSettingsViewModel,
     onNavigateToLogin: () -> Unit,
     onLogout: () -> Unit,
-    onThemeToggle: (Boolean) -> Unit
+    onThemeToggle: (Boolean) -> Unit,
+    onNavigateToBookings: () -> Unit,
 ) {
     val profileState = profileViewModel.profileState.collectAsState().value
     val preferencesState = preferencesViewModel.preferences.collectAsState().value
@@ -32,6 +40,7 @@ fun ProfileScreen(
     val currentUser = profileViewModel.currentUser
     val context = LocalContext.current
 
+    var showReviewDialog by remember { mutableStateOf(false) }
 
     // States for dialogs and preferences
     var showUpdateProfileDialog by remember { mutableStateOf(false) }
@@ -125,101 +134,217 @@ fun ProfileScreen(
 
 
 
-            // Dark Mode Toggle
+            // Newly added sections
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onNavigateToBookings()
+                    }
+                    .padding(vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Dark Mode",
+                    text = "My Bookings",
                     style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f)
                 )
-                Switch(
-                    checked = isDarkMode,
-                    onCheckedChange = { isChecked ->
-                        isDarkMode = isChecked
-                        onThemeToggle(isChecked)
-                        shouldSaveTheme = true
-                    },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = MaterialTheme.colorScheme.background,
-                        uncheckedThumbColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
 
-            // Language Selector
-            LanguageSelector(
-                selectedLanguage = "en",
-                onLanguageSelected = { language ->
-                    Toast.makeText(
-                        context,
-                        "Language changed to $language",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                expanded = false,
-                onExpandedChange = {
-                    // Handle dropdown expansion
-                },
-                onButtonClicked = {
-                    // Handle button click
-                    Toast.makeText(
-                        context,
-                        "Language changed to English",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Notification Preferences
-            NotificationPreferencesScreen(
-                preferences = preferencesState,
-                onEmailChange = { email ->
-                    preferencesViewModel.updatePreference(email = email)
-                    Toast.makeText(
-                        context,
-                        if (email) "Email notifications enabled" else "Email notifications disabled",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                onPushChange = { push ->
-                    preferencesViewModel.updatePreference(push = push)
-                    Toast.makeText(
-                        context,
-                        if (push) "Push notifications enabled" else "Push notifications disabled",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Password-related buttons (only show if user has password provider)
-            if (hasPasswordProvider) {
-                Button(
-                    onClick = { showChangePasswordDialog = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = Color.White
-                    ),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = ButtonDefaults.buttonElevation(4.dp)
-                ) {
-                    Text(text = "Change Password", style = MaterialTheme.typography.labelLarge)
-                }
-
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { // 👈 Navigation works here
+                    }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Payment Methods",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
                 )
+            }
+
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        // 👈 Navigation works here
+                    }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Support",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        showReviewDialog = true // Show the Review Us dialog
+                    }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Review Us",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { /* Handle FAQ click */ }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "FAQ",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
+            var isSettingsExpanded by remember { mutableStateOf(false) }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isSettingsExpanded = !isSettingsExpanded }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (isSettingsExpanded) Icons.Default.ArrowDropDown else Icons.Default.ArrowForward,
+                    contentDescription = "Expand/Collapse Settings"
+                )
+            }
+
+            if (isSettingsExpanded) {
+                // Add settings options here (e.g., Change Password, Dark Mode, etc.)
+                if (hasPasswordProvider) {
+                    Button(
+                        onClick = { showChangePasswordDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = Color.White
+                        ),
+                        shape = MaterialTheme.shapes.medium,
+                        elevation = ButtonDefaults.buttonElevation(4.dp)
+                    ) {
+                        Text(text = "Change Password", style = MaterialTheme.typography.labelLarge)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+                // Dark Mode Toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Dark Mode",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = isDarkMode,
+                        onCheckedChange = {
+                            isDarkMode = it
+                            onThemeToggle(it)
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.background,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Language Selector
+                LanguageSelector(
+                    selectedLanguage = "en",
+                    onLanguageSelected = { language ->
+                        Toast.makeText(
+                            context,
+                            "Language changed to $language",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    expanded = false,
+                    onExpandedChange = {
+                        // Handle dropdown expansion
+                    },
+                    onButtonClicked = {
+                        // Handle button click
+                        Toast.makeText(
+                            context,
+                            "Language changed to English",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+                // Notification Preferences
+                NotificationPreferencesScreen(
+                    preferences = preferencesState,
+                    onEmailChange = { email ->
+                        preferencesViewModel.updatePreference(email = email)
+                        Toast.makeText(
+                            context,
+                            if (email) "Email notifications enabled" else "Email notifications disabled",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+                    onPushChange = { push ->
+                        preferencesViewModel.updatePreference(push = push)
+                        Toast.makeText(
+                            context,
+                            if (push) "Push notifications enabled" else "Push notifications disabled",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+
                 // Delete Account Button
                 Button(
                     onClick = { showDeleteDialog = true },
@@ -234,26 +359,68 @@ fun ProfileScreen(
                     Text(text = "Delete Account", style = MaterialTheme.typography.labelLarge)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+            }
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
 
-                // Logout Button
-                Button(
-                    onClick = {
-                        profileViewModel.signOut()
-                        onLogout()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = Color.White
-                    ),
-                    shape = MaterialTheme.shapes.medium,
-                    elevation = ButtonDefaults.buttonElevation(4.dp)
-                ) {
-                    Text(text = "Logout", style = MaterialTheme.typography.labelLarge)
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        // 👈 Navigation works here
+                    }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Terms & Conditions ",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            LaunchedEffect(profileState) {
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        // 👈 Navigation works here
+                    }
+                    .padding(vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Privacy Policy",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
+
+            Spacer(modifier = Modifier.height(16.dp))
+            // Logout Button
+            Button(
+                onClick = {
+                    profileViewModel.signOut()
+                    onLogout()
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ),
+                shape = MaterialTheme.shapes.medium,
+                elevation = ButtonDefaults.buttonElevation(4.dp)
+            ) {
+                Text(text = "Logout", style = MaterialTheme.typography.labelLarge)
+            }
+        }
+
+
+        LaunchedEffect(profileState) {
                 when (profileState) {
                     is ProfileState.Error -> {
                         Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
@@ -314,56 +481,6 @@ fun ProfileScreen(
                 )
             }
 
-            // Add Password Dialog
-            if (showAddPasswordDialog) {
-                AddPasswordDialog(
-                    onAddPassword = { password ->
-                        profileViewModel.addPasswordToUser(
-                            password = password,
-                            onSuccess = {
-                                Toast.makeText(
-                                    context,
-                                    "Password added successfully",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            },
-                            onFailure = { error ->
-                                errorMessage = error
-                            }
-                        )
-                        showAddPasswordDialog = false
-                    },
-                    onDismiss = { showAddPasswordDialog = false }
-                )
-            }
-
-            // Delete Password Dialog
-            if (showDeletePasswordDialog) {
-                DeletePasswordDialog(
-                    currentPassword = currentPassword,
-                    onPasswordChange = { currentPassword = it },
-                    errorMessage = errorMessage,
-                    onDismiss = { showDeletePasswordDialog = false },
-                    onConfirm = {
-                        profileViewModel.deletePassword(
-                            currentPassword = currentPassword,
-                            onSuccess = {
-                                Toast.makeText(
-                                    context,
-                                    "Password deleted successfully",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            },
-                            onFailure = { error ->
-                                errorMessage = error
-                            }
-                        )
-                        showDeletePasswordDialog = false
-                    },
-                    showWarning = !hasPasswordProvider
-                )
-            }
-
             // Delete Account Dialog
             if (showDeleteDialog) {
                 DeleteAccountDialog(
@@ -395,6 +512,96 @@ fun ProfileScreen(
                     isLoading = CircularProgressIndicator()
                 )
             }
+            ReviewUsDialog(
+                showDialog = showReviewDialog,
+                onDismiss = { showReviewDialog = false },
+                onSubmit = { rating, review ->
+                    // Handle the submitted rating and review
+                    Toast.makeText(context, "Rating: $rating, Review: $review", Toast.LENGTH_LONG).show()
+                }
+            )
+        }
+    }
+
+
+// Review Us Dialog
+
+@Composable
+fun ReviewUsDialog(
+    showDialog: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (rating: Float, review: String) -> Unit
+) {
+    if (showDialog) {
+        Dialog(onDismissRequest = onDismiss) {
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Rate Us",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    // Rating Bar
+                    var rating by remember { mutableStateOf(0f) }
+                    RatingBar(
+                        rating = rating,
+                        onRatingChanged = { rating = it }
+                    )
+
+                    // Review Input
+                    var reviewText by remember { mutableStateOf("") }
+                    TextField(
+                        value = reviewText,
+                        onValueChange = { reviewText = it },
+                        label = { Text("Write your review") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // Submit Button
+                    Button(
+                        onClick = {
+                            onSubmit(rating, reviewText)
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Submit")
+                    }
+                }
+            }
         }
     }
 }
+
+@Composable
+fun RatingBar(
+    rating: Float,
+    onRatingChanged: (Float) -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        for (i in 1..5) {
+            Icon(
+                imageVector = if (i <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .size(32.dp)
+                    .clickable { onRatingChanged(i.toFloat()) }
+            )
+        }
+    }
+}
+
