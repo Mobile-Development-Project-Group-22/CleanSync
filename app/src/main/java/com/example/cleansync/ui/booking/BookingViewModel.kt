@@ -20,13 +20,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import android.util.Log
+
 import java.util.*
 
 class BookingViewModel : ViewModel() {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-
+    // Add a method to update the progress stage
+    fun updateProgressStage(bookingId: String, newStage: String) {
+        db.collection("bookings")
+            .document(bookingId)
+            .update("progressStage", newStage)
+            .addOnSuccessListener {
+                Log.d("BookingViewModel", "Progress updated successfully")
+            }
+            .addOnFailureListener { e ->
+                Log.e("BookingViewModel", "Failed to update progress", e)
+            }
+    }
     private val emailRepository = EmailRepository()
 
     var isSendingEmail by mutableStateOf(false)

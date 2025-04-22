@@ -1,13 +1,17 @@
 package com.example.cleansync.ui.booking
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
@@ -15,6 +19,7 @@ import androidx.work.WorkManager
 import com.example.cleansync.model.Booking
 import com.example.cleansync.utils.NotificationScheduler
 import com.firebase.ui.auth.BuildConfig
+
 import java.util.*
 
 @Composable
@@ -48,6 +53,8 @@ fun BookingCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            // Show progress bar
+            BookingProgressBar(progressStage = booking.progressStage)
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -115,6 +122,72 @@ fun BookingCard(
         NotificationDebugDialog(onDismiss = { showDebugDialog = false })
     }
 }
+@Composable
+fun BookingProgressBar(progressStage: String) {
+    val stages = listOf("Booked", "Collected", "Cleaned", "Returned")
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        stages.forEachIndexed { index, stage ->
+            // Check if the stage is completed or not
+            val isCompleted = getProgressStageColor(progressStage, index) == "completed"
+
+            // Circle color
+            val circleColor = if (isCompleted) Color.Green else Color.Gray
+
+            // Line color (only green up to the current stage)
+            val lineColor = if (isCompleted) Color.Green else Color.Gray
+
+            // Circle for the stage
+            Box(
+                modifier = Modifier
+                    .size(30.dp)
+                    .background(
+                        color = circleColor,
+                        shape = CircleShape
+                    )
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stage.first().toString(),
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+
+            // Line after the circle
+            if (index < stages.size - 1) {
+                Spacer(
+                    modifier = Modifier
+                        .width(32.dp)
+                        .height(2.dp)
+                        .background(
+                            // The line is green only up to the current stage
+                            if (isCompleted) lineColor else Color.Gray
+                        )
+                )
+            }
+        }
+    }
+}
+
+private fun getProgressStageColor(progressStage: String, index: Int): String {
+    return when (index) {
+        0 -> if (progressStage == "booked" || progressStage == "collected" || progressStage == "cleaned" || progressStage == "returned") "completed" else "incomplete"
+        1 -> if (progressStage == "collected" || progressStage == "cleaned" || progressStage == "returned") "completed" else "incomplete"
+        2 -> if (progressStage == "cleaned" || progressStage == "returned") "completed" else "incomplete"
+        3 -> if (progressStage == "returned") "completed" else "incomplete"
+        else -> "incomplete"
+    }
+}
+
+
 
 @Composable
 fun NotificationDebugDialog(onDismiss: () -> Unit) {
@@ -203,4 +276,5 @@ fun NotificationDebugDialog(onDismiss: () -> Unit) {
             }
         }
     )
+
 }
