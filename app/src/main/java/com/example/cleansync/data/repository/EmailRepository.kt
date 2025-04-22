@@ -8,6 +8,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.Response
 import java.lang.Exception
+import com.example.cleansync.BuildConfig
 
 class EmailRepository {
     private val emailService: EmailService by lazy {
@@ -20,8 +21,10 @@ class EmailRepository {
 
     suspend fun sendConfirmationEmail(emailRequest: EmailRequest): Boolean {
         return try {
+
             val response = emailService.sendEmail(emailRequest)
             if (response.isSuccessful) {
+                Log.d("EmailRepository", "Email sent successfully!")
                 true
             } else {
                 Log.e("EmailRepository", "Failed: ${response.code()} - ${response.errorBody()?.string()}")
@@ -32,7 +35,6 @@ class EmailRepository {
             false
         }
     }
-
     private fun logErrorResponse(response: Response<EmailResponse>) {
         val errorBody = response.errorBody()?.string()
         Log.e("EmailRepository", "Error: ${response.code()} - ${response.message()} - $errorBody")
