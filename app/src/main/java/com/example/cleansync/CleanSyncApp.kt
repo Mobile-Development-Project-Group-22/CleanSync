@@ -170,6 +170,7 @@ fun AppNavHost(
                         popUpTo(Screen.HomeScreen.route) { inclusive = true }
                     }
                 },
+                bookingViewModel = BookingViewModel(),
             )
         }
         composable(Screen.NotificationScreen.route) {
