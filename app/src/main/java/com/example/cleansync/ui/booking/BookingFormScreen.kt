@@ -2,38 +2,20 @@ package com.example.cleansync.ui.booking
 
 import android.Manifest
 import android.os.Build
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -55,9 +37,11 @@ fun BookingFormScreen(
             Manifest.permission.ACCESS_COARSE_LOCATION
     )
 
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
 
         Button(
             onClick = {
@@ -78,7 +62,26 @@ fun BookingFormScreen(
 
         CustomTextField("Name", bookingViewModel.name, { bookingViewModel.name = it }, errors["name"])
         CustomTextField("Email", bookingViewModel.email, { bookingViewModel.email = it }, errors["email"], KeyboardType.Email)
-        CustomTextField("Phone Number", bookingViewModel.phoneNumber, { bookingViewModel.phoneNumber = it }, errors["phone"], KeyboardType.Phone)
+
+        // PHONE NUMBER FIELD WITH FINLAND FLAG +358
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Phone Number")
+            OutlinedTextField(
+                value = bookingViewModel.phoneNumber,
+                onValueChange = { bookingViewModel.phoneNumber = it },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                isError = errors["phone"] != null,
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    Text(text = "🇫🇮 +358", fontSize = 14.sp)
+                }
+            )
+            errors["phone"]?.let {
+                Text(text = it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+            }
+        }
+
         CustomTextField("Street Address", bookingViewModel.streetAddress, {
             bookingViewModel.streetAddress = it
             bookingViewModel.fetchAddressSuggestions(it)
@@ -112,7 +115,11 @@ fun BookingFormScreen(
         }
 
         bookingViewModel.errorMessage?.let {
-            Text(text = it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
         Button(
