@@ -1,4 +1,4 @@
-package com.example.cleansync.ui.profile
+package com.example.cleansync.ui.profile.dialogs
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
