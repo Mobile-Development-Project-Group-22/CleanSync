@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
+import com.example.cleansync.ui.profile.dialogs.UpdateNameDialog
 import com.example.cleansync.utils.NotificationUtils
 import com.google.firebase.auth.FirebaseUser
 
