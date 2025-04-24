@@ -127,6 +127,7 @@ fun BookingCard(
 @Composable
 fun BookingProgressBar(progressStage: String) {
     val stages = listOf("Booked", "Collected", "Cleaned", "Returned")
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Row(
         modifier = Modifier
@@ -140,10 +141,7 @@ fun BookingProgressBar(progressStage: String) {
             val isCompleted = getProgressStageColor(progressStage, index) == "completed"
 
             // Circle color
-            val circleColor = if (isCompleted) Color.Green else Color.Gray
-
-            // Line color (only green up to the current stage)
-            val lineColor = if (isCompleted) Color.Green else Color.Gray
+            val circleColor = if (isCompleted) primaryColor else Color.Gray
 
             // Circle for the stage
             Box(
@@ -170,14 +168,14 @@ fun BookingProgressBar(progressStage: String) {
                         .width(32.dp)
                         .height(2.dp)
                         .background(
-                            // The line is green only up to the current stage
-                            if (isCompleted) lineColor else Color.Gray
+                            color = if (getProgressStageColor(progressStage, index + 1) == "completed") primaryColor else Color.Gray
                         )
                 )
             }
         }
     }
 }
+
 
 private fun getProgressStageColor(progressStage: String, index: Int): String {
     return when (index) {
