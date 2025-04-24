@@ -116,6 +116,9 @@ fun AppNavHost(
         composable(Screen.MyBookingsScreen.route) {
             MyBookingsScreen(
                 viewModel = bookingViewModel,
+                onBookingClick = {
+                    navController.navigate(Screen.BookingStartScreen.route)
+                },
             )
         }
 
