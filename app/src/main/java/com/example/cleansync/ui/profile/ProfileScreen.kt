@@ -2,13 +2,19 @@ package com.example.cleansync.ui.profile
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.ripple
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +36,7 @@ fun ProfileScreen(
     onThemeToggle: (Boolean) -> Unit,
     onNavigateToBookings: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToSupport : () -> Unit,
+    onNavigateToSupport: () -> Unit,
 ) {
     val profileState = profileViewModel.profileState.collectAsState().value
     val preferencesState = preferencesViewModel.preferences.collectAsState().value
@@ -78,164 +84,178 @@ fun ProfileScreen(
         it.providerId == GoogleAuthProvider.PROVIDER_ID
     } == true
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        if (profileState is ProfileState.Loading) {
-            CircularProgressIndicator(
-                modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+    val items = listOf(
+        "My Bookings" to onNavigateToBookings,
+        "Payment Methods" to {},
+        "Support" to onNavigateToSupport,
+        "Review Us" to { showReviewDialog = true },
+        "FAQ" to { showFAQDialog = true },
+        "Settings" to onNavigateToSettings,
+        "Terms & Conditions" to { showTermsDialog = true },
+        "Privacy Policy" to { showPrivacyDialog = true },
+    )
 
-        TopAppBar(
-            title = {
-                Text(
-                    text = "Profile",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center,
-                )
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            ),
-            modifier = Modifier.fillMaxWidth().height(70.dp)
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 70.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            ProfilePictureSection(profileViewModel, currentUser)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val items = listOf(
-                "My Bookings" to onNavigateToBookings,
-                "Payment Methods" to {},
-                "Support" to onNavigateToSupport,
-                "Review Us" to { showReviewDialog = true },
-                "FAQ" to { showFAQDialog = true },
-                "Settings" to onNavigateToSettings,
-                "Terms & Conditions" to { showTermsDialog = true },
-                "Privacy Policy" to { showPrivacyDialog = true },
-            )
-
-            items.forEach { (label, action) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { action() }
-                        .padding(vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
                     Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.weight(1f)
+                        text = "Profile",
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center,
                     )
-                }
-                Divider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f), thickness = 1.dp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    profileViewModel.signOut()
-                    onLogout()
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
+                actions = {
+                    AnimatedContent(targetState = isDarkMode, label = "ThemeIcon") { dark ->
+                        IconButton(onClick = {
+                            isDarkMode = !isDarkMode
+                            shouldSaveTheme = true
+                            onThemeToggle(isDarkMode)
+                        }) {
+                            Icon(
+                                imageVector = if (dark) Icons.Default.DarkMode else Icons.Default.LightMode,
+                                contentDescription = "Toggle Theme"
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
-                ),
-                shape = MaterialTheme.shapes.medium,
-                elevation = ButtonDefaults.buttonElevation(4.dp)
-            ) {
-                Text("Logout", style = MaterialTheme.typography.labelLarge)
-            }
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
         }
-
-        LaunchedEffect(profileState) {
-            when (profileState) {
-                is ProfileState.Error -> Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
-                is ProfileState.Success -> if (profileState.user == null) onNavigateToLogin() else Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_LONG).show()
-                else -> {}
-            }
-        }
-
-        if (showChangePasswordDialog) {
-            ChangePasswordDialog(
-                currentPassword, newPassword, confirmNewPassword,
-                onCurrentPasswordChange = { currentPassword = it },
-                onNewPasswordChange = { newPassword = it },
-                onConfirmNewPasswordChange = { confirmNewPassword = it },
-                errorMessage,
-                onDismiss = { showChangePasswordDialog = false },
-                onConfirm = {
-                    if (newPassword == confirmNewPassword && newPassword.isNotEmpty()) {
-                        profileViewModel.changePassword(
-                            currentPassword, newPassword,
-                            onSuccess = {
-                                Toast.makeText(context, "Password changed successfully", Toast.LENGTH_LONG).show()
-                            },
-                            onFailure = { error -> errorMessage = error }
-                        )
-                        showChangePasswordDialog = false
-                    } else errorMessage = "Passwords do not match or are empty"
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
+            if (profileState is ProfileState.Loading) {
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-            )
-        }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    ProfilePictureSection(profileViewModel, currentUser)
+                    Spacer(modifier = Modifier.height(16.dp))
 
-        if (showDeleteDialog) {
-            DeleteAccountDialog(
-                isGoogleProvider = isGoogleSignIn,
-                currentPassword,
-                onPasswordChange = { currentPassword = it },
-                errorMessage,
-                onDismiss = { showDeleteDialog = false },
-                onConfirm = {
-                    profileViewModel.reAuthenticateAndDeleteUser(
-                        currentPassword,
-                        onSuccess = {
-                            Toast.makeText(context, "Account deleted successfully", Toast.LENGTH_LONG).show()
-                            onNavigateToLogin()
+                    items.forEach { (label, action) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    onClick = action,
+                                    indication = ripple(
+                                        bounded = true,
+                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                    ),
+                                    interactionSource = remember { MutableInteractionSource() }
+                                )
+                                .padding(vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            profileViewModel.signOut()
+                            onLogout()
                         },
-                        onFailure = { error -> errorMessage = error },
-                        context = context
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateContentSize(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        ),
+                        shape = MaterialTheme.shapes.medium,
+                        elevation = ButtonDefaults.buttonElevation(4.dp)
+                    ) {
+                        Text("Logout", style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+
+                if (showChangePasswordDialog) {
+                    ChangePasswordDialog(
+                        currentPassword, newPassword, confirmNewPassword,
+                        onCurrentPasswordChange = { currentPassword = it },
+                        onNewPasswordChange = { newPassword = it },
+                        onConfirmNewPasswordChange = { confirmNewPassword = it },
+                        errorMessage,
+                        onDismiss = { showChangePasswordDialog = false },
+                        onConfirm = {
+                            if (newPassword == confirmNewPassword && newPassword.isNotEmpty()) {
+                                profileViewModel.changePassword(
+                                    currentPassword, newPassword,
+                                    onSuccess = {
+                                        Toast.makeText(context, "Password changed successfully", Toast.LENGTH_LONG).show()
+                                    },
+                                    onFailure = { error -> errorMessage = error }
+                                )
+                                showChangePasswordDialog = false
+                            } else errorMessage = "Passwords do not match or are empty"
+                        }
                     )
-                    showDeleteDialog = false
-                },
-                isLoading = CircularProgressIndicator()
-            )
-        }
+                }
 
-        ReviewUsDialog(showDialog = showReviewDialog, onDismiss = { showReviewDialog = false }) { rating, review ->
-            Toast.makeText(context, "Rating: $rating, Review: $review", Toast.LENGTH_LONG).show()
-        }
+                if (showDeleteDialog) {
+                    DeleteAccountDialog(
+                        isGoogleProvider = isGoogleSignIn,
+                        currentPassword,
+                        onPasswordChange = { currentPassword = it },
+                        errorMessage,
+                        onDismiss = { showDeleteDialog = false },
+                        onConfirm = {
+                            profileViewModel.reAuthenticateAndDeleteUser(
+                                currentPassword,
+                                onSuccess = {
+                                    Toast.makeText(context, "Account deleted successfully", Toast.LENGTH_LONG).show()
+                                    onNavigateToLogin()
+                                },
+                                onFailure = { error -> errorMessage = error },
+                                context = context
+                            )
+                            showDeleteDialog = false
+                        },
+                        isLoading = CircularProgressIndicator()
+                    )
+                }
 
-        FAQDialog(showDialog = showFAQDialog, onDismiss = { showFAQDialog = false })
-        TermsAndConditionsDialog(showDialog = showTermsDialog, onDismiss = { showTermsDialog = false })
-        PrivacyPolicyDialog(showDialog = showPrivacyDialog, onDismiss = { showPrivacyDialog = false })
+                ReviewUsDialog(showDialog = showReviewDialog, onDismiss = { showReviewDialog = false }) { rating, review ->
+                    Toast.makeText(context, "Rating: $rating, Review: $review", Toast.LENGTH_LONG).show()
+                }
+
+                FAQDialog(showDialog = showFAQDialog, onDismiss = { showFAQDialog = false })
+                TermsAndConditionsDialog(showDialog = showTermsDialog, onDismiss = { showTermsDialog = false })
+                PrivacyPolicyDialog(showDialog = showPrivacyDialog, onDismiss = { showPrivacyDialog = false })
+            }
+        }
     }
-}
 
-@Composable
-fun RatingBar(rating: Float, onRatingChanged: (Float) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        for (i in 1..5) {
-            Icon(
-                imageVector = if (i <= rating) Icons.Default.Star else Icons.Default.StarBorder,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(32.dp).clickable { onRatingChanged(i.toFloat()) }
-            )
+    LaunchedEffect(profileState) {
+        when (profileState) {
+            is ProfileState.Error -> Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
+            is ProfileState.Success -> if (profileState.user == null) onNavigateToLogin() else Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_LONG).show()
+            else -> {}
         }
     }
 }
