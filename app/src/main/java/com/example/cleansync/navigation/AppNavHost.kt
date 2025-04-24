@@ -21,6 +21,7 @@ import com.example.cleansync.ui.notifications.NotificationViewModel
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
 import com.example.cleansync.ui.profile.SettingScreen
+import com.example.cleansync.ui.profile.SupportScreen
 
 @Composable
 fun AppNavHost(
@@ -174,8 +175,12 @@ fun AppNavHost(
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 },
-                onThemeToggle = onThemeToggle,
-            )
+                onNavigateToSupport = {
+                    navController.navigate(Screen.SupportScreen.route) {
+                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                    }
+                },
+                onThemeToggle = onThemeToggle,)
         }
         composable(Screen.SettingScreen.route) {
             SettingScreen(
@@ -196,6 +201,15 @@ fun AppNavHost(
 
                 )
 
+        }
+        composable(Screen.SupportScreen.route) {
+            SupportScreen(
+                onBackClick = {
+                    navController.navigate(Screen.ProfileScreen.route) {
+                        popUpTo(Screen.SupportScreen.route) { inclusive = true }
+                    }
+                },
+            )
         }
 
     }
