@@ -22,19 +22,48 @@ fun CarpetInputForm(
     onCalculate: () -> Unit
 ) {
     val maxCarpetSize = 50.0
+    val coroutineScope = rememberCoroutineScope()
 
-    // Filters input: valid decimal number <= 50
-    fun validateAndFilter(input: String): String {
-        // Allow only digits and one optional dot
+    // Error state and animation
+    var showError by remember { mutableStateOf(false) }
+    val offsetX = remember { Animatable(0f) }
+
+    // Shake animation
+    suspend fun shake() {
+        offsetX.snapTo(0f)
+        offsetX.animateTo(
+            targetValue = 0f,
+            animationSpec = keyframes {
+                durationMillis = 400
+                -10f at 50
+                10f at 100
+                -8f at 150
+                8f at 200
+                -4f at 250
+                4f at 300
+                0f at 350
+            }
+        )
+    }
+
+    // Validation with feedback
+    fun validateAndFilter(input: String, onChange: (String) -> Unit) {
         val cleaned = input.replace(',', '.').filterIndexed { index, c ->
             c.isDigit() || (c == '.' && input.indexOf('.') == index)
         }
 
         val number = cleaned.toDoubleOrNull()
-        return when {
-            number == null -> ""
-            number > maxCarpetSize -> maxCarpetSize.toString()
-            else -> cleaned
+        when {
+            number == null -> onChange("")
+            number > maxCarpetSize -> {
+                onChange(maxCarpetSize.toString())
+                showError = true
+                coroutineScope.launch { shake() }
+            }
+            else -> {
+                onChange(cleaned)
+                showError = false
+            }
         }
     }
 
@@ -45,9 +74,7 @@ fun CarpetInputForm(
         OutlinedTextField(
             value = length,
             onValueChange = {
-                val filtered = validateAndFilter(it)
-                if (filtered.isNotEmpty()) onLengthChange(filtered)
-                else if (it.isEmpty()) onLengthChange("") // Allow clearing
+                if (it.isEmpty()) onLengthChange("") else validateAndFilter(it, onLengthChange)
             },
             label = { Text("Carpet Length (m)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -58,15 +85,23 @@ fun CarpetInputForm(
         OutlinedTextField(
             value = width,
             onValueChange = {
-                val filtered = validateAndFilter(it)
-                if (filtered.isNotEmpty()) onWidthChange(filtered)
-                else if (it.isEmpty()) onWidthChange("")
+                if (it.isEmpty()) onWidthChange("") else validateAndFilter(it, onWidthChange)
             },
             label = { Text("Carpet Width (m)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
+
+        if (showError) {
+            Text(
+                text = "Value can't be greater than 50",
+                color = Color.Red,
+                modifier = Modifier
+                    .offset(x = offsetX.value.dp)
+                    .padding(start = 8.dp)
+            )
+        }
 
         Button(onClick = onCalculate, modifier = Modifier.align(Alignment.End)) {
             Text("Calculate")
