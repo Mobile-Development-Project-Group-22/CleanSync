@@ -104,6 +104,7 @@ fun AppNavHost(
                     }
                 },
                 bookingViewModel = BookingViewModel(),
+
             )
         }
         composable(Screen.NotificationScreen.route) {
