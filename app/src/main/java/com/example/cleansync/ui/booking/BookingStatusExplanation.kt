@@ -1,30 +1,30 @@
 package com.example.cleansync.ui.booking
+
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.*
 import kotlinx.coroutines.delay
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-
 
 @Composable
 fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
     val stages = listOf("Booked", "Collected", "Cleaned", "Returned")
-    val colors = listOf(Color.Green, Color.Green, Color.Green, Color.Green)
+    val stageColors = List(stages.size) { Color.Green }
 
     var currentStage by remember { mutableStateOf(-1) }
 
-    // Animation control
+    // Trigger animation
     LaunchedEffect(Unit) {
         for (i in stages.indices) {
             currentStage = i
-            delay(1000) // wait before moving to next
+            delay(1000L)
         }
     }
 
@@ -45,61 +45,87 @@ fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     stages.forEachIndexed { index, stage ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                        val isActive = index <= currentStage
+                        val isCurrent = index == currentStage
+
+                        val animatedOffsetY by animateDpAsState(
+                            targetValue = if (isActive) 0.dp else 30.dp,
+                            animationSpec = tween(durationMillis = 500)
+                        )
+
+                        val animatedAlpha by animateFloatAsState(
+                            targetValue = if (isActive) 1f else 0f,
+                            animationSpec = tween(durationMillis = 500)
+                        )
+
+                        Column(
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
                             Box(
                                 modifier = Modifier
+                                    .offset(y = animatedOffsetY)
                                     .size(40.dp)
                                     .background(
-                                        if (index <= currentStage) colors[index] else Color.Gray,
+                                        color = if (isActive) stageColors[index] else Color.Gray,
                                         shape = CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = stage.first().toString(),
-                                    color = Color.White
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
-                            Text(
-                                stage,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+
+                            AnimatedVisibility(
+                                visible = isActive,
+                                enter = fadeIn(animationSpec = tween(300)) + slideInVertically(
+                                    initialOffsetY = { it / 2 }
+                                ),
+                                exit = fadeOut()
+                            ) {
+                                Text(
+                                    text = stage,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
 
                         if (index < stages.size - 1) {
-                            // Progressive line
+                            val lineProgress by animateFloatAsState(
+                                targetValue = when {
+                                    currentStage > index -> 1f
+                                    currentStage == index -> 0.5f
+                                    else -> 0f
+                                },
+                                animationSpec = tween(durationMillis = 500)
+                            )
+
                             Box(
                                 modifier = Modifier
                                     .height(4.dp)
                                     .weight(1f)
+                                    .padding(horizontal = 4.dp)
                             ) {
-                                // Background line
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(Color.Gray)
                                 )
-                                // Foreground line grows based on progress
-                                if (index < currentStage) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .fillMaxWidth()
-                                            .background(Color.Green)
-                                    )
-                                } else if (index == currentStage) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxHeight()
-                                            .fillMaxWidth(1f) // Half-filled as it’s in progress
-                                            .background(Color.Green)
-                                    )
-                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(lineProgress)
+                                        .background(Color.Green)
+                                )
                             }
                         }
                     }
                 }
-
             }
         }
     )
