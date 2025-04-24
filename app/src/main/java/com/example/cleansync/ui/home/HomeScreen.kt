@@ -1,38 +1,33 @@
 package com.example.cleansync.ui.home
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cleansync.model.Booking
 import com.example.cleansync.ui.auth.AuthViewModel
+import com.example.cleansync.ui.booking.BookingViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
-import com.example.cleansync.utils.NotificationUtils
+import com.google.accompanist.swiperefresh.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import com.example.cleansync.ui.booking.BookingViewModel
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,92 +41,63 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     val homeViewModel = remember { HomeViewModel(authViewModel, notificationViewModel) }
-    val showEmailDialog by homeViewModel.showEmailVerificationDialog.collectAsStateWithLifecycle()
     val bookings by homeViewModel.bookings.collectAsStateWithLifecycle()
-    val currentUser = homeViewModel.currentUser
-    val context = LocalContext.current
-
-
-    val isSendingEmail = bookingViewModel.isSendingEmail
-    val emailSentSuccess = bookingViewModel.emailSentSuccess
-
-    LaunchedEffect(homeViewModel.isLoggedIn) {
-        if (!homeViewModel.isLoggedIn) {
-            onLogout()
-        }
-    }
-    // Email Status Dialog
-    if (isSendingEmail || emailSentSuccess != null) {
-        val message = when {
-            isSendingEmail -> "Sending your booking confirmation..."
-            emailSentSuccess == true -> "Your booking confirmation email was sent successfully!"
-            emailSentSuccess == false -> "Failed to send the booking confirmation email. Please try again."
-            else -> ""
-        }
-
-        AlertDialog(
-            onDismissRequest = { /* Handle dismiss if needed */ },
-            title = { Text("Booking Confirmation Email Status") },
-            text = {
-                Column {
-                    if (isSendingEmail) {
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(text = message, style = MaterialTheme.typography.bodyMedium)
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { /* Handle dismiss action */ }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-    if (showEmailDialog) {
-        AlertDialog(
-            onDismissRequest = { homeViewModel.dismissEmailDialog() },
-            title = { Text("Email Verification") },
-            text = { Text("Please verify your email to continue.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        homeViewModel.resendVerificationEmail()
-                        homeViewModel.dismissEmailDialog()
-                    }
-                ) {
-                    Text("Resend Verification Email")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { homeViewModel.dismissEmailDialog() }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
+    val isRefreshing by homeViewModel.isRefreshing.collectAsStateWithLifecycle()
+    val completedBookings by homeViewModel.completedBookings.collectAsStateWithLifecycle()
+    val loyaltyPoints by homeViewModel.loyaltyPoints.collectAsStateWithLifecycle()
+    val userName = homeViewModel.currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User"
 
     Scaffold(
         topBar = {
             HomeAppBar(
-                userName = currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User",
+                userName = userName,
                 unreadCount = homeViewModel.unreadNotificationCount(),
                 onNotificationClick = onNavigateToNotifications,
                 onProfileClick = onNavigateToProfile
             )
         },
-        content = { innerPadding ->
-            HomeContent(
-                modifier = Modifier.padding(innerPadding),
-                bookings = bookings,
-                onBookingClick = onNavigateToBooking,
-                onLogoutClick = {
-                    homeViewModel.signOut()
-                    onLogout()
-                },
-            )
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onNavigateToBooking,
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CleaningServices,
+                    contentDescription = "Book Now"
+                )
+            }
         },
+        content = { paddingValues ->
+            SwipeRefresh(
+                state = rememberSwipeRefreshState(isRefreshing),
+                onRefresh = { homeViewModel.refreshBookings() },
+                modifier = Modifier.padding(paddingValues),
+                indicator = { state, trigger ->
+                    SwipeRefreshIndicator(
+                        state = state,
+                        refreshTriggerDistance = trigger,
+                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        shape = MaterialTheme.shapes.extraLarge
+                    )
+                }
+            ) {
+                HomeContent(
+                    bookings = bookings,
+                    completedBookings = completedBookings,
+                    userName = userName,
+                    onBookingClick = onNavigateToBooking,
+                    onLogoutClick = {
+                        homeViewModel.signOut()
+                        onLogout()
+                    }
+                )
+            }
+        }
     )
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -145,54 +111,40 @@ private fun HomeAppBar(
     TopAppBar(
         title = {
             Text(
-                text = "Hi, $userName",
+                text = "Dashboard",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primary,
-            titleContentColor = MaterialTheme.colorScheme.onSurface
+            titleContentColor = MaterialTheme.colorScheme.onPrimary
         ),
         actions = {
-            BadgedBox(
-                badge = {
-                    if (unreadCount > 0) {
-                        Badge {
-                            Text(unreadCount.toString())
-                        }
-                    }
-                }
-            ) {
+            BadgedBox(badge = {
+                if (unreadCount > 0) Badge { Text(unreadCount.toString()) }
+            }) {
                 IconButton(onClick = onNotificationClick) {
-                    Icon(
-                        imageVector = Icons.Default.Notifications,
-                        contentDescription = "Notifications",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                    Icon(Icons.Default.Notifications, contentDescription = "Notifications")
                 }
             }
-
             IconButton(onClick = onProfileClick) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
             }
         }
     )
 }
 
-@Composable
-private fun HomeContent(
-    modifier: Modifier = Modifier,
-    bookings: List<Booking>,
-    onBookingClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-) {
-    val context = LocalContext.current
 
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun HomeContent(
+    bookings: List<Booking>,
+    completedBookings: Int,
+    userName: String,
+    onBookingClick: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
     val bookingsByDate = bookings.groupBy {
         LocalDateTime.parse(it.bookingDateTime, DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")).toLocalDate()
     }
@@ -201,77 +153,33 @@ private fun HomeContent(
     var showDialog by remember { mutableStateOf(false) }
 
     LazyColumn(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        stickyHeader {
+            Spacer(Modifier.height(16.dp))
+        }
         item {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            FilledTonalButton(
-                onClick = onBookingClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Book a Cleaning", style = MaterialTheme.typography.labelLarge)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = {
-                    NotificationUtils.triggerNotification(
-                        context = context,
-                        title = "Test Notification",
-                        message = "This is a test notification",
-                        read = false,
-                        scheduleTimeMillis = null
-                    )
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large
-            ) {
-                Text("Test Notification", style = MaterialTheme.typography.labelLarge)
-            }
+            UserGreetingCard(userName = userName, bookings = bookings, completedBookings = completedBookings)
         }
 
         item {
-            CalendarView(
-                bookingsByDate = bookingsByDate,
-                onDateClick = { date ->
-                    selectedDate = date
+                CalendarView(bookingsByDate = bookingsByDate) {
+                    selectedDate = it
                     showDialog = true
                 }
-            )
+
         }
 
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                Text(
-                    text = "Upcoming Bookings",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            }
-
+            Text("Upcoming Bookings", style = MaterialTheme.typography.titleMedium)
         }
 
         if (bookings.isEmpty()) {
             item {
-                Text("No bookings yet.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+                EmptyBookingCard(onBookingClick)
             }
         } else {
             items(bookings.sortedBy { it.timestamp }) { booking ->
@@ -284,232 +192,125 @@ private fun HomeContent(
                 onClick = onLogoutClick,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    "Logout",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text("Logout", color = MaterialTheme.colorScheme.error)
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 
     if (showDialog && selectedDate != null) {
-        val bookingsOnDate = bookingsByDate[selectedDate] ?: emptyList()
-
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Bookings on ${selectedDate.toString()}") },
-            text = {
-                if (bookingsOnDate.isNotEmpty()) {
-                    Column {
-                        bookingsOnDate.forEach {
-                            Text("• ${it.name} at ${it.bookingDateTime}", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                } else {
-                    Text("No bookings on this day.", style = MaterialTheme.typography.bodyMedium)
-                }
-            },
-            confirmButton = {
-                if (bookingsOnDate.isEmpty()) {
-                    TextButton(
-                        onClick = {
-                            showDialog = false
-                            onBookingClick() // 👈 Navigate to Booking screen
-                        }
-                    ) {
-                        Text("Book Now")
-                    }
-                } else {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text("Close")
-                    }
-                }
+        BookingDialog(
+            date = selectedDate!!,
+            bookings = bookingsByDate[selectedDate] ?: emptyList(),
+            onDismiss = { showDialog = false },
+            onBookClick = {
+                showDialog = false
+                onBookingClick()
             }
         )
     }
-
 }
 
 @Composable
-fun CalendarView(
-    bookingsByDate: Map<LocalDate, List<Booking>>,
-    onDateClick: (LocalDate) -> Unit
-) {
-    var selectedMonth by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1)) }
-    val today = remember { LocalDate.now() }
+fun UserGreetingCard(userName: String, bookings: List<Booking>, completedBookings: Int) {
+    val upcoming = bookings.size
+    val name = userName.split(" ").firstOrNull() ?: userName
 
-    val daysInMonth = selectedMonth.lengthOfMonth()
-    val firstDayOfMonth = selectedMonth.withDayOfMonth(1)
-    val startDayOfWeek = (firstDayOfMonth.dayOfWeek.value + 6) % 7 // Monday = 0
-
-    val dates = List(startDayOfWeek) { null } + List(daysInMonth) {
-        selectedMonth.withDayOfMonth(it + 1)
+    SectionCard {
+        Text("Welcome back, $name! 👋", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            StatItem(upcoming, "Upcoming Booking${if (upcoming != 1) "s" else ""}", Icons.Default.Event)
+            StatItem(completedBookings, "Cleaning${if (completedBookings != 1) "s" else ""} Done", Icons.Default.CheckCircle)
+        }
     }
+}
 
-    val rows = dates.chunked(7).map { week ->
-        if (week.size < 7) week + List(7 - week.size) { null } else week
+@Composable
+private fun StatItem(value: Int, label: String, icon: ImageVector) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(4.dp))
+            Text(value.toString(), fontWeight = FontWeight.Bold)
+        }
+        Text(label, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center)
     }
+}
 
-    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Month Navigation
+@Composable
+fun BookingCard(booking: Booking, modifier: Modifier = Modifier) {
+    ElevatedCard(modifier = modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = { selectedMonth = selectedMonth.minusMonths(1) }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Previous Month",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Column {
+                Text(booking.name, fontWeight = FontWeight.Bold)
+                Text(booking.bookingDateTime, style = MaterialTheme.typography.bodyMedium)
             }
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Details")
+        }
+    }
+}
 
-            Text(
-                text = selectedMonth.month.name.lowercase()
-                    .replaceFirstChar { it.uppercase() } + " ${selectedMonth.year}",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            IconButton(onClick = { selectedMonth = selectedMonth.plusMonths(1) }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Next Month",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+@Composable
+fun EmptyBookingCard(onBookingClick: () -> Unit) {
+    SectionCard {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.CleaningServices, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp))
+            Text("No bookings yet", style = MaterialTheme.typography.titleSmall)
+            Text("Book your first cleaning service", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(8.dp))
+            FilledTonalButton(onClick = onBookingClick) {
+                Text("Book Now")
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Day Labels
-        Row(modifier = Modifier.fillMaxWidth()) {
-            dayLabels.forEach { day ->
-                Text(
-                    text = day,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Calendar Grid
-        rows.forEach { week ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                week.forEach { date ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .padding(2.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (date == null) {
-                            Spacer(modifier = Modifier.fillMaxSize())
-                        } else {
-                            val isBooked = bookingsByDate.containsKey(date)
-                            val isToday = date == today
-                            val isPast = date.isBefore(today)
-
-                            val bgColor = when {
-                                isToday -> MaterialTheme.colorScheme.primary
-                                isBooked -> MaterialTheme.colorScheme.secondaryContainer
-                                else -> MaterialTheme.colorScheme.surface
-                            }
-
-                            val textColor = when {
-                                isToday -> MaterialTheme.colorScheme.onPrimary
-                                isBooked -> MaterialTheme.colorScheme.onSecondaryContainer
-                                else -> MaterialTheme.colorScheme.onSurface
-                            }
-
-                            val clickable = !isPast
-
-                            Surface(
-                                shape = CircleShape,
-                                color = bgColor,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .let {
-                                        if (clickable) {
-                                            it.clickable { onDateClick(date) }
-                                        } else {
-                                            it // Disabled, no click
-                                        }
-                                    }
-                            ) {
-                                Column(
-                                    verticalArrangement = Arrangement.Center,
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Text(
-                                        text = date.dayOfMonth.toString(),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = textColor
-                                    )
-
-                                    // Dot for upcoming bookings
-                                    if (isBooked && !isPast) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(6.dp)
-                                                .padding(top = 2.dp)
-                                                .background(
-                                                    color = MaterialTheme.colorScheme.tertiary,
-                                                    shape = CircleShape
-                                                )
-                                        )
-                                    }
-                                }
+@Composable
+fun BookingDialog(date: LocalDate, bookings: List<Booking>, onDismiss: () -> Unit, onBookClick: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Bookings on ${date.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}")
+        },
+        text = {
+            Column {
+                if (bookings.isEmpty()) {
+                    Text("No bookings scheduled for this day")
+                } else {
+                    bookings.forEach {
+                        ElevatedCard(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(it.name, fontWeight = FontWeight.Bold)
+                                Text(it.bookingDateTime)
                             }
                         }
                     }
                 }
             }
+        },
+        confirmButton = {
+            FilledTonalButton(onClick = if (bookings.isEmpty()) onBookClick else onDismiss) {
+                Text(if (bookings.isEmpty()) "Book Now" else "Close")
+            }
+        }
+    )
+}
+
+@Composable
+fun SectionCard(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
+    ElevatedCard(
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            title?.let {
+                Text(it, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
+            }
+            content()
         }
     }
 }
-
-
-
-@Composable
-private fun BookingCard(booking: Booking) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Name: ${booking.name}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Booking Date: ${booking.bookingDateTime}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            ) } } }
