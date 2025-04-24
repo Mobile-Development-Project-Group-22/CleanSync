@@ -16,7 +16,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
     val stages = listOf("Booked", "Collected", "Cleaned", "Returned")
-    val stageColors = List(stages.size) { Color.Green }
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     var currentStage by remember { mutableStateOf(-1) }
 
@@ -51,12 +51,14 @@ fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
 
                         val animatedOffsetY by animateDpAsState(
                             targetValue = if (isActive) 0.dp else 30.dp,
-                            animationSpec = tween(durationMillis = 500)
+                            animationSpec = tween(durationMillis = 500),
+                            label = "offsetY"
                         )
 
                         val animatedAlpha by animateFloatAsState(
                             targetValue = if (isActive) 1f else 0f,
-                            animationSpec = tween(durationMillis = 500)
+                            animationSpec = tween(durationMillis = 500),
+                            label = "alpha"
                         )
 
                         Column(
@@ -68,7 +70,7 @@ fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
                                     .offset(y = animatedOffsetY)
                                     .size(40.dp)
                                     .background(
-                                        color = if (isActive) stageColors[index] else Color.Gray,
+                                        color = if (isActive) primaryColor else Color.Gray,
                                         shape = CircleShape
                                     ),
                                 contentAlignment = Alignment.Center
@@ -102,7 +104,8 @@ fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
                                     currentStage == index -> 0.5f
                                     else -> 0f
                                 },
-                                animationSpec = tween(durationMillis = 500)
+                                animationSpec = tween(durationMillis = 500),
+                                label = "lineProgress"
                             )
 
                             Box(
@@ -120,7 +123,7 @@ fun BookingStatusExplanationAnimation(onDismiss: () -> Unit) {
                                     modifier = Modifier
                                         .fillMaxHeight()
                                         .fillMaxWidth(lineProgress)
-                                        .background(Color.Green)
+                                        .background(primaryColor)
                                 )
                             }
                         }
