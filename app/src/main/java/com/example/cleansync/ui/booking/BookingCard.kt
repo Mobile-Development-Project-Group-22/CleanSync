@@ -28,7 +28,8 @@ fun BookingCard(
     isExpanded: Boolean,
     onExpandToggle: () -> Unit,
     onEdit: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onShowExplanation: () -> Unit
 ) {
     var showDebugDialog by remember { mutableStateOf(false) }
 
@@ -36,7 +37,8 @@ fun BookingCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .clickable { onExpandToggle() },
+            .clickable { onExpandToggle()
+                onShowExplanation()},
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
