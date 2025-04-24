@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.cleansync.model.Booking
 import com.example.cleansync.ui.booking.components.DateAndHourPicker
+import com.example.cleansync.ui.home.EmptyBookingCard
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -20,7 +21,10 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyBookingsScreen(viewModel: BookingViewModel) {
+fun MyBookingsScreen(
+    viewModel: BookingViewModel,
+    onBookingClick: () -> Unit,
+) {
     val db = FirebaseFirestore.getInstance()
     val userId = FirebaseAuth.getInstance().currentUser?.uid
     val context = LocalContext.current
@@ -61,7 +65,7 @@ fun MyBookingsScreen(viewModel: BookingViewModel) {
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
                 loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
-                bookings.isEmpty() -> Text("No bookings found.", Modifier.align(Alignment.Center))
+                bookings.isEmpty() ->  EmptyBookingCard(onBookingClick)
                 else -> LazyColumn(contentPadding = PaddingValues(16.dp)) {
                     items(bookings.size) { index ->
                         val booking = bookings[index]
