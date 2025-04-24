@@ -39,6 +39,11 @@ fun MyBookingsScreen(viewModel: BookingViewModel) {
     val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    var showExplanationDialog by remember { mutableStateOf(false) }
+
+    if (showExplanationDialog) {
+        BookingStatusExplanationAnimation(onDismiss = { showExplanationDialog = false })
+    }
 
     // Fetch bookings on launch
     LaunchedEffect(userId) {
@@ -78,7 +83,8 @@ fun MyBookingsScreen(viewModel: BookingViewModel) {
                             onCancel = {
                                 bookingToCancel = booking
                                 showCancelDialog = true
-                            }
+                            },
+                            onShowExplanation = { showExplanationDialog = true }
                         )
                     }
                 }
