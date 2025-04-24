@@ -114,6 +114,7 @@ dependencies {
     // Google Play Services Location (for GPS)
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+
 // Accompanist permissions for Compose
     implementation("com.google.accompanist:accompanist-permissions:0.31.6-rc")
 
