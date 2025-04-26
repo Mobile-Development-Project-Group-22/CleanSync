@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.profile
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cleansync.R
 import com.example.cleansync.navigation.Screen
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +30,7 @@ fun ContactUs(
     onBackClick: () -> Unit,
     onNavigateToSupport: () -> Unit
 ) {
+    val context = LocalContext.current // Retrieve the context
     val verticalScroll = rememberScrollState()
 
     Scaffold(
@@ -82,9 +87,34 @@ fun ContactUs(
             Spacer(modifier = Modifier.height(20.dp))
 
             // Contact Details
-            ContactDetailRow(icon = Icons.Default.LocationOn, text = "Tirolintie 2, 90530 Oulu, Finland")
-            ContactDetailRow(icon = Icons.Default.Phone, text = "+358 44 930 1125")
-            ContactDetailRow(icon = Icons.Default.Email, text = "contact@cleansync.com")
+            ContactDetailRow(
+                icon = Icons.Default.LocationOn,
+                text = "Tirolintie 2, 90530 Oulu, Finland",
+                onClick = {
+                    val gmmIntentUri = Uri.parse("geo:0,0?q=Tirolintie 2, 90530 Oulu, Finland")
+                    val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
+                    mapIntent.setPackage("com.google.android.apps.maps")
+                    context.startActivity(mapIntent)
+                }
+            )
+            ContactDetailRow(
+                icon = Icons.Default.Phone,
+                text = "+358 44 930 1125",
+                onClick = {
+                    val intent = Intent(Intent.ACTION_DIAL)
+                    intent.data = Uri.parse("tel:+358449301125")
+                    context.startActivity(intent)
+                }
+            )
+            ContactDetailRow(
+                icon = Icons.Default.Email,
+                text = "contact@cleansync.com",
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SENDTO)
+                    intent.data = Uri.parse("mailto:contact@cleansync.com")
+                    context.startActivity(intent)
+                }
+            )
 
             Spacer(modifier = Modifier.height(30.dp))
 
@@ -102,11 +132,12 @@ fun ContactUs(
 }
 
 @Composable
-fun ContactDetailRow(icon: ImageVector, text: String) {
+fun ContactDetailRow(icon: ImageVector, text: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
