@@ -45,7 +45,7 @@ fun SupportScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Contact Us",
+                        text = "Support",
                         style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
