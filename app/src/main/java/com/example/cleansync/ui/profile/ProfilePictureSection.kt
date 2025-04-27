@@ -74,7 +74,14 @@ fun ProfilePictureSection(
         model = selectedImageUri ?: user?.photoUrl ?: "https://static.vecteezy.com/system/resources/previews/005/544/718/original/profile-icon-design-free-vector.jpg".toUri()
     )
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+            .padding(top = 12.dp, bottom = 1.dp)
+            .wrapContentHeight(align = Alignment.CenterVertically)
+            .clickable { imagePickerLauncher.launch("image/*") }
+    ) {
         Image(
             painter = imagePainter,
             contentDescription = "Profile Picture",

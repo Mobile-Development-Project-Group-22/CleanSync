@@ -80,11 +80,12 @@ fun MyBookingsScreen(
                         )
                     }
                 },
-                        colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                 titleContentColor = MaterialTheme.colorScheme.onPrimary
             ),
-                modifier = Modifier.padding(bottom = 20.dp),
+
+                modifier = Modifier.height(80.dp)
 
             )
                  },

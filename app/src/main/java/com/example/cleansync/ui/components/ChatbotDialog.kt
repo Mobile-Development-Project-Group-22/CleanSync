@@ -14,22 +14,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 
-data class ChatMessage(val content: String, val isBot: Boolean)
-
+data class ChatMessage(
+    val content: String,
+    val isBot: Boolean,
+    val showBookNowButton: Boolean = false
+)
 @Composable
-fun ChatbotDialog(onDismiss: () -> Unit) {
+fun ChatbotDialog(
+    onDismiss: () -> Unit,
+    onNavigateToBooking: () -> Unit,
+    onNavigateToMyBookings: () -> Unit
+) {
     var messages by remember { mutableStateOf(listOf(ChatMessage("Hi there! 👋 How can I help you today?", true))) }
     var inputText by remember { mutableStateOf("") }
     var isBotTyping by remember { mutableStateOf(false) }
-    var pendingBotReply by remember { mutableStateOf<String?>(null) }
+    var pendingBotReply by remember { mutableStateOf<ChatMessage?>(null) }
+    var showFAQOptions by remember { mutableStateOf(true) }  // Set to true initially to show FAQ options after greeting
 
-    pendingBotReply?.let { reply ->
-        LaunchedEffect(reply) {
+    // To ensure bot messages are shown one at a time, delay the response
+    pendingBotReply?.let { replyMessage ->
+        LaunchedEffect(replyMessage) {
             isBotTyping = true
-            delay(1500)
-            messages = messages + ChatMessage(reply, true)
+            delay(1500)  // Simulating bot typing
+            messages = messages + replyMessage
             isBotTyping = false
-            pendingBotReply = null
+            pendingBotReply = null  // Clear the pending bot reply after adding it to the messages list
         }
     }
 
@@ -56,30 +65,68 @@ fun ChatbotDialog(onDismiss: () -> Unit) {
                             enter = expandVertically() + fadeIn()
                         ) {
                             if (message.isBot) {
-                                BotMessageBubble(message.content)
+                                BotMessageBubble(
+                                    message.content,
+                                    showBookNow = message.showBookNowButton,
+                                    onBookNowClick = onNavigateToBooking
+                                )
                             } else {
                                 UserMessageBubble(message.content)
                             }
                         }
                     }
                     if (isBotTyping) {
-                        item {
-                            TypingIndicator()
-                        }
+                        item { TypingIndicator() }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                if (messages.size == 1) {
-                    OptionButton("What is CleanSync?") {
-                        pendingBotReply = "CleanSync is a platform offering professional cleaning services. 🧹✨"
-                    }
-                    OptionButton("How does booking work?") {
-                        pendingBotReply = "Booking is easy! Pick your date and time, and you're set! 📅✅"
-                    }
-                    OptionButton("See my bookings") {
-                        pendingBotReply = "Here's a summary of your upcoming bookings 📅."
+                // Show FAQ options only after the bot's message when the user input is unrecognized
+                if (showFAQOptions) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp) // Set a max height for the FAQ options
+                            .padding(top = 8.dp)
+                    ) {
+                        LazyColumn {
+                            item {
+                                FAQOptions(
+                                    onSelect = { question ->
+                                        when (question) {
+                                            "What is CleanSync?" -> {
+                                                pendingBotReply = ChatMessage(
+                                                    "🧹 CleanSync connects you to trusted cleaning professionals easily and quickly!",
+                                                    isBot = true
+                                                )
+                                                messages = messages + ChatMessage(question, false)
+                                            }
+                                            "How to book a cleaning?" -> {
+                                                pendingBotReply = ChatMessage(
+                                                    "📅 To book a cleaning, just go to your dashboard and pick a date and time. Simple and quick!",
+                                                    isBot = true,
+                                                    showBookNowButton = true
+                                                )
+                                                messages = messages + ChatMessage(question, false)
+                                            }
+                                            "How does booking work?" -> {
+                                                pendingBotReply = ChatMessage(
+                                                    "🧽 Booking works like magic! Choose a service, pick a date, confirm your address, and you're done! Do you want to try booking now?",
+                                                    isBot = true,
+                                                    showBookNowButton = true
+                                                )
+                                                messages = messages + ChatMessage(question, false)
+                                            }
+                                            "See my upcoming bookings" -> {
+                                                onNavigateToMyBookings()
+                                            }
+                                        }
+                                        showFAQOptions = false  // Hide the options once one is selected
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -98,11 +145,28 @@ fun ChatbotDialog(onDismiss: () -> Unit) {
                 Button(
                     onClick = {
                         if (inputText.isNotBlank()) {
-                            val userMessage = ChatMessage(inputText, false)
-                            val botReply = getBotResponse(inputText)
-                            messages = messages + userMessage
-                            inputText = ""
-                            pendingBotReply = botReply
+                            // Add the user's message
+                            messages = messages + ChatMessage(inputText, false)
+
+                            // Check if the input is recognized as a valid FAQ or not
+                            if (inputText !in listOf("What is CleanSync?", "How to book a cleaning?", "How does booking work?", "See my upcoming bookings")) {
+                                // Check if we haven't already added a bot reply for unrecognized input
+                                if (messages.none { it.content == "🤖 I only answer FAQs. Please select from the options above." }) {
+                                    pendingBotReply = ChatMessage(
+                                        content = "🤖 I only answer FAQs. Please select from the options above.",
+                                        isBot = true
+                                    )
+                                    showFAQOptions = true  // Show the FAQ options after the bot reply
+                                }
+                            } else {
+                                // If the input matches one of the FAQs, show bot reply directly
+                                pendingBotReply = ChatMessage(
+                                    content = "🤖 I’m answering your FAQ.",
+                                    isBot = true
+                                )
+                            }
+
+                            inputText = ""  // Clear the input text field
                         }
                     },
                     modifier = Modifier.align(Alignment.End)
@@ -114,13 +178,35 @@ fun ChatbotDialog(onDismiss: () -> Unit) {
     )
 }
 
+
+
+
+
+
+
+
+
 @Composable
-fun BotMessageBubble(message: String) {
-    Row(
+fun FAQOptions(onSelect: (String) -> Unit) {
+    Column {
+        OptionButton("What is CleanSync?") { onSelect("What is CleanSync?") }
+        OptionButton("How to book a cleaning?") { onSelect("How to book a cleaning?") }
+        OptionButton("How does booking work?") { onSelect("How does booking work?") }
+        OptionButton("See my upcoming bookings") { onSelect("See my upcoming bookings") }
+    }
+}
+
+@Composable
+fun BotMessageBubble(
+    message: String,
+    showBookNow: Boolean = false,
+    onBookNowClick: () -> Unit = {}
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        horizontalArrangement = Arrangement.Start
+        horizontalAlignment = Alignment.Start
     ) {
         Box(
             modifier = Modifier
@@ -135,6 +221,15 @@ fun BotMessageBubble(message: String) {
                 color = Color.Black,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
             )
+        }
+        if (showBookNow) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Button(
+                onClick = onBookNowClick,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text("Book Now")
+            }
         }
     }
 }
@@ -168,8 +263,7 @@ fun UserMessageBubble(message: String) {
 fun TypingIndicator() {
     Text(
         text = "Bot is typing...",
-        modifier = Modifier
-            .padding(8.dp),
+        modifier = Modifier.padding(8.dp),
         color = Color.Gray,
         style = MaterialTheme.typography.bodySmall
     )
@@ -188,15 +282,5 @@ fun OptionButton(label: String, onClick: () -> Unit) {
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary
         )
-    }
-}
-
-fun getBotResponse(input: String): String {
-    return when {
-        input.contains("book", ignoreCase = true) -> "You can book a cleaning from your dashboard 📅!"
-        input.contains("hello", ignoreCase = true) -> "Hello! 👋 How can I assist you today?"
-        input.contains("points", ignoreCase = true) -> "Your loyalty points are available under Profile > Rewards 🏆."
-        input.contains("clean", ignoreCase = true) -> "We clean carpets, sofas, and more! 🧼✨"
-        else -> "I'm still learning! Try asking about bookings, services, or points! 🙌"
     }
 }
