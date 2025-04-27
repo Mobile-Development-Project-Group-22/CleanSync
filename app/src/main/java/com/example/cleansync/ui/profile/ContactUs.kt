@@ -55,6 +55,7 @@ fun ContactUs(
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
+                modifier = Modifier.height(80.dp)
             )
         }
     ) { paddingValues ->
