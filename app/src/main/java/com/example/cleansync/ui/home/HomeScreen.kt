@@ -36,7 +36,10 @@ fun HomeScreen(
     onNavigateToBooking: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToProfile: () -> Unit,
+
+    onNavigateToMyBookings: () -> Unit,
     onLogout: () -> Unit
+
 ) {
     val homeViewModel = remember { HomeViewModel(authViewModel, notificationViewModel) }
     val bookings by homeViewModel.bookings.collectAsStateWithLifecycle()
@@ -117,7 +120,10 @@ fun HomeScreen(
 
         // Show Chatbot Dialog when open
         if (isChatOpen) {
-            ChatbotDialog(onDismiss = { isChatOpen = false })
+            ChatbotDialog(onDismiss = { isChatOpen = false },
+                onNavigateToBooking = onNavigateToBooking,
+                onNavigateToMyBookings = onNavigateToMyBookings
+                )
         }
     }
 }
