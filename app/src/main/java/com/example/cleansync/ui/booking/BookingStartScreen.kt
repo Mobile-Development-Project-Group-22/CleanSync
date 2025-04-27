@@ -81,6 +81,21 @@ fun BookingStartScreen(
                     )
                 }
             }
+            // Pickup and Delivery Fee
+            Text(
+                text = "Pickup & Delivery Fee: €10.00",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.secondary
+            )
+
+            // Total Price
+            bookingViewModel.totalPrice?.let { total ->
+                Text(
+                    text = "Total Price: €${"%.2f".format(total)}",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
             if (showCouponField) {
                 Row(

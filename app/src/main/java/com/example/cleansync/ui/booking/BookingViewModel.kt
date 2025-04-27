@@ -45,6 +45,8 @@ class BookingViewModel : ViewModel() {
     var isSendingEmail by mutableStateOf(false)
     var emailSentSuccess by mutableStateOf<Boolean?>(null)
     //coupon
+    // Pickup and delivery fee
+    private val pickupAndDeliveryFee = 10f
     var couponCode by mutableStateOf("")
     var couponApplied by mutableStateOf(false)
     var couponMessage by mutableStateOf<String?>(null)
@@ -86,10 +88,14 @@ class BookingViewModel : ViewModel() {
                 estimatedPrice = originalPrice
             }
         }
+        calculateTotalPrice()
     }
+
     var length by mutableStateOf("")
     var width by mutableStateOf("")
     var estimatedPrice by mutableStateOf<Float?>(null)
+    // To store total price including the pickup and delivery fee
+    var totalPrice by mutableStateOf<Float?>(null)
     var showInputFields by mutableStateOf(false)
     var selectedDateTime by mutableStateOf<LocalDateTime?>(null)
     val formattedDateTime: String
@@ -119,12 +125,22 @@ class BookingViewModel : ViewModel() {
         val l = length.toFloatOrNull()
         val w = width.toFloatOrNull()
         estimatedPrice = if (l != null && w != null) l * w * 4f else null
+        calculateTotalPrice()
+    }
+    // Recalculate the total price after including pickup and delivery fee
+    private fun calculateTotalPrice() {
+        totalPrice = if (estimatedPrice != null) {
+            estimatedPrice!! + pickupAndDeliveryFee
+        } else {
+            null
+        }
     }
 
     fun resetBooking() {
         length = ""
         width = ""
         estimatedPrice = null
+        totalPrice = null
         selectedDateTime = null
         name = ""
         email = ""
@@ -254,6 +270,7 @@ class BookingViewModel : ViewModel() {
             length = length,
             width = width,
             estimatedPrice = estimatedPrice!!,
+            totalPrice = totalPrice ?: (estimatedPrice!! + pickupAndDeliveryFee),
             bookingDateTime = formattedDateTime,
         )
 

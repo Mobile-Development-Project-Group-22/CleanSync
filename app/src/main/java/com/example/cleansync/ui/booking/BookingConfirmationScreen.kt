@@ -25,11 +25,12 @@ fun BookingConfirmationScreen(
     val context = LocalContext.current
     val selectedDateTime = bookingViewModel.selectedDateTime
     val estimatedPrice = bookingViewModel.estimatedPrice
+    val totalPrice = bookingViewModel.totalPrice
     val formattedDateTime = remember(selectedDateTime) {
         selectedDateTime?.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
     }
-    val formattedPrice = remember(estimatedPrice) {
-        estimatedPrice?.let { "€$it" } ?: "Not available"
+    val formattedTotalPrice = remember(totalPrice) {
+        totalPrice?.let { "€${"%.2f".format(it)}" } ?: "Not available"
     }
 
     // Send a confirmation push (once) and schedule a notification 1 hour before the booking
@@ -83,7 +84,8 @@ fun BookingConfirmationScreen(
             Text(text = "⏰ Date & Time: $it", fontSize = 16.sp)
         }
 
-        Text(text = "💰 Estimated Price: $formattedPrice", fontSize = 16.sp)
+        Text(text = "💰 Total Price: $formattedTotalPrice", fontSize = 16.sp)
+
 
         Spacer(modifier = Modifier.height(32.dp))
 
