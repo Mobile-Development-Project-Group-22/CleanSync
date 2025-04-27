@@ -1,4 +1,3 @@
-// BookingStartScreen.kt
 package com.example.cleansync.ui.booking
 
 import androidx.compose.animation.AnimatedVisibility
@@ -20,6 +19,7 @@ fun BookingStartScreen(
 ) {
     val context = LocalContext.current
     var showDatePicker by remember { mutableStateOf(false) }
+    var showCouponField by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -33,27 +33,104 @@ fun BookingStartScreen(
             style = MaterialTheme.typography.headlineSmall
         )
 
-        Button(onClick = { bookingViewModel.toggleInputFields() }) {
-            Text("Start Calculation")
+        if (!bookingViewModel.estimatedPriceCalculated) {
+            Button(onClick = { bookingViewModel.toggleInputFields() }) {
+                Text("Start Calculation")
+            }
         }
 
-        AnimatedVisibility(visible = bookingViewModel.showInputFields) {
+        AnimatedVisibility(visible = bookingViewModel.showInputFields && !bookingViewModel.estimatedPriceCalculated) {
             CarpetInputForm(
                 length = bookingViewModel.length,
                 width = bookingViewModel.width,
                 onLengthChange = { bookingViewModel.length = it },
                 onWidthChange = { bookingViewModel.width = it },
-                onCalculate = bookingViewModel::calculatePrice
+                onCalculate = {
+                    bookingViewModel.calculatePrice()
+                    showCouponField = true
+                }
             )
         }
 
         bookingViewModel.estimatedPrice?.let { price ->
-            Text("Estimated Price: €$price", style = MaterialTheme.typography.bodyLarge)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                elevation = CardDefaults.cardElevation(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Estimated Price",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "€${"%.2f".format(price)}",
+                        style = MaterialTheme.typography.displaySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
 
-            Button(onClick = {
-                showDatePicker = true
-            }) {
-                Text("Select Date & Time")
+            if (showCouponField) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = bookingViewModel.couponCode,
+                        onValueChange = { bookingViewModel.couponCode = it },
+                        label = { Text("Coupon Code (optional)") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                        enabled = !bookingViewModel.couponApplied
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                        onClick = { bookingViewModel.applyCoupon() },
+                        enabled = !bookingViewModel.couponApplied
+                    ) {
+                        Text("Apply")
+                    }
+                }
+
+                bookingViewModel.couponMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                bookingViewModel.errorMessage?.takeIf { bookingViewModel.estimatedPrice != null }?.let { err ->
+                    Text(
+                        text = err,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+
+            if (bookingViewModel.selectedDateTime == null) {
+                Button(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text("Select Date & Time")
+                }
             }
 
             if (showDatePicker) {
@@ -65,9 +142,16 @@ fun BookingStartScreen(
         }
 
         bookingViewModel.selectedDateTime?.let {
-            Text("Selected: ${bookingViewModel.formattedDateTime}")
+            Text(
+                text = "Selected: ${bookingViewModel.formattedDateTime}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
 
-            Button(onClick = onBookingConfirmed) {
+            Button(
+                onClick = onBookingConfirmed,
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
                 Text("Continue to Booking Form")
             }
 
@@ -76,7 +160,7 @@ fun BookingStartScreen(
             }
         }
 
-        bookingViewModel.errorMessage?.let {
+        bookingViewModel.errorMessage?.takeIf { bookingViewModel.estimatedPrice == null }?.let {
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
     }
