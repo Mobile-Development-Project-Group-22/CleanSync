@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -33,11 +34,7 @@ fun ProfilePictureSection(
 ) {
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    // For name dialog
-    var showNameDialog by remember { mutableStateOf(false) }
-    var nameInput by remember { mutableStateOf(user?.displayName ?: "") }
-    var nameError by remember { mutableStateOf("") }
+    var isUploading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -46,11 +43,14 @@ fun ProfilePictureSection(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
             uri?.let {
+                // Preview the selected image
                 selectedImageUri = it
+                // Show loading spinner during upload
+                isUploading = true
                 profileViewModel.uploadProfileImage(
                     uri = it,
                     onSuccess = {
-
+                        isUploading = false
                         Toast.makeText(
                             context,
                             "Profile picture updated successfully",
@@ -58,6 +58,7 @@ fun ProfilePictureSection(
                         ).show()
                     },
                     onFailure = { error ->
+                        isUploading = false
                         Toast.makeText(
                             context,
                             "Failed to update profile picture: $error",
@@ -65,16 +66,17 @@ fun ProfilePictureSection(
                         ).show()
                     }
                 )
-
             }
         }
     )
 
+    // Image painter for displaying the profile image or selected preview
     val imagePainter = rememberAsyncImagePainter(
         model = selectedImageUri ?: user?.photoUrl ?: "https://static.vecteezy.com/system/resources/previews/005/544/718/original/profile-icon-design-free-vector.jpg".toUri()
     )
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally,
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
@@ -82,9 +84,10 @@ fun ProfilePictureSection(
             .wrapContentHeight(align = Alignment.CenterVertically)
             .clickable { imagePickerLauncher.launch("image/*") }
     ) {
+        // Show image preview if available
         Image(
             painter = imagePainter,
-            contentDescription = "Profile Picture",
+            contentDescription = "Profile Picture Preview",
             modifier = Modifier
                 .size(120.dp)
                 .clip(CircleShape)
@@ -92,20 +95,26 @@ fun ProfilePictureSection(
                 .clickable { imagePickerLauncher.launch("image/*") }
         )
 
+        // Show loading indicator if uploading
+        if (isUploading) {
+            CircularProgressIndicator(modifier = Modifier.padding(top = 16.dp))
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Clickable Name to show dialog
+        // Name
         Text(
             text = user?.displayName ?: "User Name",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onBackground,
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
-            modifier = Modifier.clickable { showNameDialog = true }
+            modifier = Modifier.clickable { }
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        // Email and verification status
         Row {
             Text(
                 text = user?.email ?: "No Email",
@@ -122,47 +131,10 @@ fun ProfilePictureSection(
             )
         }
 
-        // Snackbar
+        // Snackbar for status messages
         androidx.compose.material3.SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.padding(top = 16.dp)
-        )
-    }
-
-    // Show dialog when triggered
-    if (showNameDialog) {
-        UpdateNameDialog(
-            newDisplayName = nameInput,
-            onNameChange = {
-                nameInput = it
-                Toast.makeText(
-                    context,
-                    "Name updated successfully",
-                    Toast.LENGTH_SHORT
-                ).show()
-            },
-            onDismiss = { showNameDialog = false },
-            onConfirm = {
-                if (nameInput.isBlank()) {
-                    nameError = "Name cannot be empty"
-                } else {
-                    profileViewModel.updateDisplayName(nameInput)
-                    showNameDialog = false
-                    NotificationUtils.sendCustomNotification(
-                        context = context,
-                        title = "Profile Update",
-                        message = "Your display name has been updated to $nameInput"
-                    )
-                    Toast.makeText(
-                        context,
-                        "Name updated successfully",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    nameError = ""
-                }
-            },
-            errorMessage = nameError
-
         )
     }
 }
