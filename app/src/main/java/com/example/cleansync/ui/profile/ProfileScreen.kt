@@ -37,6 +37,7 @@ fun ProfileScreen(
     onNavigateToBookings: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToSupport: () -> Unit,
+    onNavigateToContact: () -> Unit,
 ) {
     val profileState = profileViewModel.profileState.collectAsState().value
     val preferencesState = preferencesViewModel.preferences.collectAsState().value
@@ -87,7 +88,7 @@ fun ProfileScreen(
     val items = listOf(
         "My Bookings" to onNavigateToBookings,
         "Payment Methods" to {},
-        "Support" to onNavigateToSupport,
+        "Contact Us" to onNavigateToContact,
         "Review Us" to { showReviewDialog = true },
         "FAQ" to { showFAQDialog = true },
         "Settings" to onNavigateToSettings,
