@@ -115,11 +115,12 @@ fun PasswordResetScreen(
                 title = {
                     Text(
                         "Reset Password",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
                     )
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -131,7 +132,8 @@ fun PasswordResetScreen(
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                modifier = Modifier.height(70.dp)
             )
         }
     ) { padding ->

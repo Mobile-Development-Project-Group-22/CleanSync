@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">CleanSync</string>
     <string name="Server_Client_ID">87507478885-cpchf19l98bb85ghrq65qrn2chrh3uc7.apps.googleusercontent.com</string>
+    <string name="CleanSync">CleanSync</string>
 </resources>

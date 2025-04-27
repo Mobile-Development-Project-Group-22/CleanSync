@@ -1,5 +1,11 @@
 package com.example.cleansync.ui.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -56,20 +62,43 @@ fun HomeScreen(
                     userName = userName,
                     unreadCount = homeViewModel.unreadNotificationCount(),
                     onNotificationClick = onNavigateToNotifications,
-                    onProfileClick = onNavigateToProfile
+                    onProfileClick = onNavigateToProfile,
+
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = onNavigateToBooking,
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                // Container for both FABs to arrange them
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),  // Provide some padding so they don't stick to edges
+                    contentAlignment = Alignment.BottomEnd // Align to the bottom right corner
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CleaningServices,
-                        contentDescription = "Book Now"
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.End,
+                        verticalArrangement = Arrangement.spacedBy(16.dp) // Adds space between buttons
+                    ) {
+                        FloatingActionButton(
+                            onClick = onNavigateToBooking,
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CleaningServices,
+                                contentDescription = "Book Now"
+                            )
+                        }
+
+                        FloatingActionButton(
+                            onClick = { isChatOpen = true },
+                            shape = CircleShape,
+                            containerColor = MaterialTheme.colorScheme.secondary,
+                            contentColor = MaterialTheme.colorScheme.onSecondary
+                        ) {
+                            Icon(Icons.Default.Chat, contentDescription = "Chat with Assistant")
+                        }
+                    }
                 }
             },
             content = { paddingValues ->
@@ -101,22 +130,6 @@ fun HomeScreen(
             }
         )
 
-        // Chatbot Button (above the Book Now button)
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 140.dp), // offset above the Book FAB
-            horizontalAlignment = Alignment.End
-        ) {
-            FloatingActionButton(
-                onClick = { isChatOpen = true },
-                shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary
-            ) {
-                Icon(Icons.Default.Chat, contentDescription = "Chat with Assistant")
-            }
-        }
 
         // Show Chatbot Dialog when open
         if (isChatOpen) {
@@ -134,14 +147,17 @@ private fun HomeAppBar(
     userName: String,
     unreadCount: Int,
     onNotificationClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+
 ) {
+    val isUserLoggedIn = userName.isNotEmpty() // Check if the user is logged in
     TopAppBar(
         title = {
             Text(
                 text = "Dashboard",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.animateContentSize() // Animation for title resizing
             )
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -149,17 +165,79 @@ private fun HomeAppBar(
             titleContentColor = MaterialTheme.colorScheme.onPrimary
         ),
         actions = {
-            BadgedBox(badge = {
-                if (unreadCount > 0) Badge { Text(unreadCount.toString()) }
-            }) {
-                IconButton(onClick = onNotificationClick) {
-                    Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+
+            // Profile Icon with Dynamic User State
+            IconButton(
+                onClick = onProfileClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .padding(bottom = 20.dp)
+                    .animateContentSize() // Animation for button press
+            ) {
+                if (isUserLoggedIn) {
+                    // Display user profile if logged in
+                    Icon(
+                        Icons.Default.AccountCircle,
+                        contentDescription = "Profile",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    // Show a default icon or a login icon
+                    Icon(
+                        Icons.Default.PersonAdd,
+                        contentDescription = "Login",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
-            IconButton(onClick = onProfileClick) {
-                Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+
+            // Notification Icon with Badge
+            // Using BadgedBox to show the unread count
+
+            BadgedBox(
+                badge = {
+
+                        Badge(
+                            modifier = Modifier.padding(
+                            ),
+                        ) {
+                            Text(
+                                unreadCount.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondary,
+
+                            )
+                        }
+
+                }
+            ) {
+                IconButton(
+                    onClick = onNotificationClick,
+                    modifier = Modifier
+                        .padding(
+                            start = 0.dp,
+                            end = 0.dp,
+                            bottom = 20.dp,
+                        )
+                        .size(40.dp)
+                        .animateContentSize() // Animation for button press
+                ) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Notifications",
+                        tint = if (unreadCount > 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier
+                            .padding(
+
+                            )
+                            .animateContentSize() // Animation for button press
+                    )
+                }
             }
-        }
+
+
+        },
+        modifier = Modifier.height(80.dp) // Set desired height for top bar
     )
 }
 
@@ -329,6 +407,8 @@ fun BookingDialog(date: LocalDate, bookings: List<Booking>, onDismiss: () -> Uni
     )
 }
 
+
+// A reusable card component for sections
 @Composable
 fun SectionCard(title: String? = null, content: @Composable ColumnScope.() -> Unit) {
     ElevatedCard(

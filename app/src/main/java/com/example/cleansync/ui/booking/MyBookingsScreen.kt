@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cleansync.model.Booking
 import com.example.cleansync.ui.booking.components.DateAndHourPicker
@@ -64,9 +65,36 @@ fun MyBookingsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("My Bookings") }) },
+
+        topBar = {
+            TopAppBar(
+                title = {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "My Bookings",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.align(Alignment.Center)
+                                .padding(end = 18.dp) // Padding around the title
+                                .fillMaxWidth(), // Fill the width to center the text
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                titleContentColor = MaterialTheme.colorScheme.onPrimary
+            ),
+
+                modifier = Modifier.height(80.dp)
+
+            )
+                 },
+
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
+
+
+
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
                 loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
