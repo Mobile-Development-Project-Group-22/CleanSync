@@ -259,11 +259,5 @@ fun ProfileScreen(
         }
     }
 
-    LaunchedEffect(profileState) {
-        when (profileState) {
-            is ProfileState.Error -> Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
-            is ProfileState.Success -> if (profileState.user == null) onNavigateToLogin() else Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_LONG).show()
-            else -> {}
-        }
-    }
+
 }
