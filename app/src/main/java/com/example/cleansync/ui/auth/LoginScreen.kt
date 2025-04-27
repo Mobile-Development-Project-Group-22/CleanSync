@@ -158,11 +158,12 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center
         ) {
             // App Logo/Header
-            Icon(
-                imageVector = Icons.Default.AccountCircle,
-                contentDescription = "App Logo",
-                modifier = Modifier.size(120.dp),
-                tint = MaterialTheme.colorScheme.primary
+            Image(
+                painter = painterResource(id = R.drawable.ic_company_logo),
+                contentDescription = "Company Logo",
+                modifier = Modifier
+                    .size(160.dp)
+
             )
 
             Spacer(modifier = Modifier.height(32.dp))
