@@ -1,8 +1,6 @@
 package com.example.cleansync.ui.home
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,19 +13,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cleansync.model.Booking
 import com.example.cleansync.ui.auth.AuthViewModel
 import com.example.cleansync.ui.booking.BookingViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
+import com.example.cleansync.ui.components.ChatbotDialog
 import com.google.accompanist.swiperefresh.*
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,58 +44,82 @@ fun HomeScreen(
     val completedBookings by homeViewModel.completedBookings.collectAsStateWithLifecycle()
     val loyaltyPoints by homeViewModel.loyaltyPoints.collectAsStateWithLifecycle()
     val userName = homeViewModel.currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User"
+    var isChatOpen by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            HomeAppBar(
-                userName = userName,
-                unreadCount = homeViewModel.unreadNotificationCount(),
-                onNotificationClick = onNavigateToNotifications,
-                onProfileClick = onNavigateToProfile
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToBooking,
-                shape = CircleShape,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(
-                    imageVector = Icons.Default.CleaningServices,
-                    contentDescription = "Book Now"
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                HomeAppBar(
+                    userName = userName,
+                    unreadCount = homeViewModel.unreadNotificationCount(),
+                    onNotificationClick = onNavigateToNotifications,
+                    onProfileClick = onNavigateToProfile
                 )
-            }
-        },
-        content = { paddingValues ->
-            SwipeRefresh(
-                state = rememberSwipeRefreshState(isRefreshing),
-                onRefresh = { homeViewModel.refreshBookings() },
-                modifier = Modifier.padding(paddingValues),
-                indicator = { state, trigger ->
-                    SwipeRefreshIndicator(
-                        state = state,
-                        refreshTriggerDistance = trigger,
-                        backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        shape = MaterialTheme.shapes.extraLarge
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = onNavigateToBooking,
+                    shape = CircleShape,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CleaningServices,
+                        contentDescription = "Book Now"
                     )
                 }
-            ) {
-                HomeContent(
-                    bookings = bookings,
-                    completedBookings = completedBookings,
-                    userName = userName,
-                    onBookingClick = onNavigateToBooking,
-                    onLogoutClick = {
-                        homeViewModel.signOut()
-                        onLogout()
+            },
+            content = { paddingValues ->
+                SwipeRefresh(
+                    state = rememberSwipeRefreshState(isRefreshing),
+                    onRefresh = { homeViewModel.refreshBookings() },
+                    modifier = Modifier.padding(paddingValues),
+                    indicator = { state, trigger ->
+                        SwipeRefreshIndicator(
+                            state = state,
+                            refreshTriggerDistance = trigger,
+                            backgroundColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            shape = MaterialTheme.shapes.extraLarge
+                        )
                     }
-                )
+                ) {
+                    HomeContent(
+                        bookings = bookings,
+                        completedBookings = completedBookings,
+                        userName = userName,
+                        onBookingClick = onNavigateToBooking,
+                        onLogoutClick = {
+                            homeViewModel.signOut()
+                            onLogout()
+                        }
+                    )
+                }
+            }
+        )
+
+        // Chatbot Button (above the Book Now button)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 16.dp, bottom = 140.dp), // offset above the Book FAB
+            horizontalAlignment = Alignment.End
+        ) {
+            FloatingActionButton(
+                onClick = { isChatOpen = true },
+                shape = CircleShape,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary
+            ) {
+                Icon(Icons.Default.Chat, contentDescription = "Chat with Assistant")
             }
         }
-    )
 
+        // Show Chatbot Dialog when open
+        if (isChatOpen) {
+            ChatbotDialog(onDismiss = { isChatOpen = false })
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,7 +157,6 @@ private fun HomeAppBar(
     )
 }
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeContent(
@@ -166,11 +187,10 @@ fun HomeContent(
         }
 
         item {
-                CalendarView(bookingsByDate = bookingsByDate) {
-                    selectedDate = it
-                    showDialog = true
-                }
-
+            CalendarView(bookingsByDate = bookingsByDate) {
+                selectedDate = it
+                showDialog = true
+            }
         }
 
         item {
@@ -209,6 +229,9 @@ fun HomeContent(
         )
     }
 }
+
+// All other components such as UserGreetingCard, StatItem, BookingCard, etc., remain unchanged.
+
 
 @Composable
 fun UserGreetingCard(userName: String, bookings: List<Booking>, completedBookings: Int) {
