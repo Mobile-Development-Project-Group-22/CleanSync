@@ -18,6 +18,7 @@ import com.example.cleansync.ui.home.HomeScreen
 import com.example.cleansync.ui.notifications.NotificationScreen
 import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.example.cleansync.ui.notifications.NotificationViewModel
+import com.example.cleansync.ui.profile.ContactUs
 import com.example.cleansync.ui.profile.ProfileScreen
 import com.example.cleansync.ui.profile.ProfileViewModel
 import com.example.cleansync.ui.profile.SettingScreen
@@ -184,6 +185,11 @@ fun AppNavHost(
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 },
+                onNavigateToContact = {
+                    navController.navigate(Screen.ContactUs.route) {
+                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                    }
+                },
                 onThemeToggle = onThemeToggle,)
         }
         composable(Screen.SettingScreen.route) {
@@ -206,15 +212,23 @@ fun AppNavHost(
                 )
 
         }
+        composable(Screen.ContactUs.route) {
+            ContactUs(
+                onBackClick = { navController.navigate(Screen.ProfileScreen.route) },
+                onNavigateToSupport = { navController.navigate(Screen.SupportScreen.route) }
+            )
+        }
+
         composable(Screen.SupportScreen.route) {
             SupportScreen(
                 onBackClick = {
-                    navController.navigate(Screen.ProfileScreen.route) {
+                    navController.navigate(Screen.ContactUs.route) {
                         popUpTo(Screen.SupportScreen.route) { inclusive = true }
                     }
                 },
             )
         }
+
 
     }
 }
