@@ -104,7 +104,7 @@ fun ChatbotDialog(
                                             }
                                             "How to book a cleaning?" -> {
                                                 pendingBotReply = ChatMessage(
-                                                    "📅 To book a cleaning, just go to your dashboard and pick a date and time. Simple and quick!",
+                                                    "📅 To book a cleaning, simply click on the floating 'Book Now' button on your dashboard or tap the 'Book Now' button below to get started",
                                                     isBot = true,
                                                     showBookNowButton = true
                                                 )
@@ -151,9 +151,9 @@ fun ChatbotDialog(
                             // Check if the input is recognized as a valid FAQ or not
                             if (inputText !in listOf("What is CleanSync?", "How to book a cleaning?", "How does booking work?", "See my upcoming bookings")) {
                                 // Check if we haven't already added a bot reply for unrecognized input
-                                if (messages.none { it.content == "🤖 I only answer FAQs. Please select from the options above." }) {
+                                if (messages.none { it.content == "🤖 I only answer FAQs. Please select from the options given." }) {
                                     pendingBotReply = ChatMessage(
-                                        content = "🤖 I only answer FAQs. Please select from the options above.",
+                                        content = "🤖 I only answer FAQs. Please select from the options given.",
                                         isBot = true
                                     )
                                     showFAQOptions = true  // Show the FAQ options after the bot reply
