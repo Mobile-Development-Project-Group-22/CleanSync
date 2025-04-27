@@ -66,7 +66,7 @@ fun BookingCard(
                     "📧 ${booking.email}",
                     "📞 ${booking.phoneNumber}",
                     "📏 ${booking.length}m x ${booking.width}m",
-                    "💶 €${booking.estimatedPrice}",
+                    "💶 Total Price: €${"%.2f".format(booking.totalPrice)}",
                     "🏙️ ${booking.city}",
                     "📬 ${booking.postalCode}"
                 ).forEach {
