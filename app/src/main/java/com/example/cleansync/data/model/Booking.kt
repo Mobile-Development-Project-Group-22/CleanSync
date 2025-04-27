@@ -11,6 +11,7 @@ data class Booking(
     val length: String = "",
     val width: String = "",
     val estimatedPrice: Float = 0f,
+    val totalPrice: Float = 0f, // 👉 ADD THIS LINE
     val bookingDateTime: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     var id: String? = null,
