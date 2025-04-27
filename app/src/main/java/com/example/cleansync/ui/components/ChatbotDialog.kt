@@ -38,7 +38,7 @@ fun ChatbotDialog(
             delay(1500)  // Simulating bot typing
             messages = messages + replyMessage
             isBotTyping = false
-            pendingBotReply = null
+            pendingBotReply = null  // Clear the pending bot reply after adding it to the messages list
         }
     }
 
@@ -156,16 +156,14 @@ fun ChatbotDialog(
                                         content = "🤖 I only answer FAQs. Please select from the options above.",
                                         isBot = true
                                     )
-                                    messages = messages + pendingBotReply!!
+                                    showFAQOptions = true  // Show the FAQ options after the bot reply
                                 }
-                                showFAQOptions = true  // Show the FAQ options after the bot reply
                             } else {
                                 // If the input matches one of the FAQs, show bot reply directly
                                 pendingBotReply = ChatMessage(
                                     content = "🤖 I’m answering your FAQ.",
                                     isBot = true
                                 )
-                                messages = messages + pendingBotReply!!
                             }
 
                             inputText = ""  // Clear the input text field
@@ -179,6 +177,9 @@ fun ChatbotDialog(
         }
     )
 }
+
+
+
 
 
 
