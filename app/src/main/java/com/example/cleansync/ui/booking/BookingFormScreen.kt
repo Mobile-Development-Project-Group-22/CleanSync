@@ -64,23 +64,37 @@ fun BookingFormScreen(
         CustomTextField("Email", bookingViewModel.email, { bookingViewModel.email = it }, errors["email"], KeyboardType.Email)
 
         // PHONE NUMBER FIELD WITH FINLAND FLAG +358
+        // PHONE NUMBER FIELD WITH FINLAND FLAG +358
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(text = "Phone Number")
             OutlinedTextField(
                 value = bookingViewModel.phoneNumber,
-                onValueChange = { bookingViewModel.phoneNumber = it },
+                onValueChange = { newPhoneNumber ->
+                    // Only allow digits and limit to 10 digits
+                    if (newPhoneNumber.length <= 9 && newPhoneNumber.all { it.isDigit() }) {
+                        bookingViewModel.phoneNumber = newPhoneNumber
+                    }
+                    // Show error if the number exceeds 10 digits
+                    if (newPhoneNumber.length > 9) {
+                        bookingViewModel.fieldErrors = bookingViewModel.fieldErrors + ("phone" to "Invalid number. Please enter valid number")
+                    } else {
+                        // Clear error when the input is valid
+                        bookingViewModel.fieldErrors = bookingViewModel.fieldErrors - "phone"
+                    }
+                },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                isError = errors["phone"] != null,
+                isError = bookingViewModel.fieldErrors["phone"] != null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {
                     Text(text = "🇫🇮 +358", fontSize = 14.sp)
                 }
             )
-            errors["phone"]?.let {
+            bookingViewModel.fieldErrors["phone"]?.let {
                 Text(text = it, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
         }
+
 
         CustomTextField("Street Address", bookingViewModel.streetAddress, {
             bookingViewModel.streetAddress = it
