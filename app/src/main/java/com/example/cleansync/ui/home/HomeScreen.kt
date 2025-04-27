@@ -207,14 +207,6 @@ fun HomeContent(
             }
         }
 
-        item {
-            TextButton(
-                onClick = onLogoutClick,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Logout", color = MaterialTheme.colorScheme.error)
-            }
-        }
     }
 
     if (showDialog && selectedDate != null) {
