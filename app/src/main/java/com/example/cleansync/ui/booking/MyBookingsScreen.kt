@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,7 +45,9 @@ fun MyBookingsScreen(
     val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    var explanationShown by rememberSaveable { mutableStateOf(false) }
     var showExplanationDialog by remember { mutableStateOf(false) }
+
 
     if (showExplanationDialog) {
         BookingStatusExplanationAnimation(onDismiss = { showExplanationDialog = false })
@@ -116,7 +119,13 @@ fun MyBookingsScreen(
                                 bookingToCancel = booking
                                 showCancelDialog = true
                             },
-                            onShowExplanation = { showExplanationDialog = true }
+                            onShowExplanation = {
+                                if (!explanationShown) {
+                                    showExplanationDialog = true
+                                    explanationShown = true
+                                }
+                            }
+
                         )
                     }
                 }
