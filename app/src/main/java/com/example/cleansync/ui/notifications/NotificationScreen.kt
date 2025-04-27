@@ -70,7 +70,8 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
                             Text("Clear All", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
-                }
+                },
+                modifier = Modifier.height(80.dp)
             )
         }
     ) { padding ->

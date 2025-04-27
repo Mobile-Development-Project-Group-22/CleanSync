@@ -209,6 +209,7 @@ private fun HomeAppBar(
                     onClick = onNotificationClick,
                     modifier = Modifier
                         .padding(
+                            start = 0.dp,
                             end = 0.dp,
                             bottom = 20.dp,
                         )
