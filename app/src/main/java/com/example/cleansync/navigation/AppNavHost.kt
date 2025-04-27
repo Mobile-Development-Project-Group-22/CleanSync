@@ -99,15 +99,18 @@ fun AppNavHost(
                 onNavigateToProfile = {
                     navController.navigate(Screen.ProfileScreen.route)
                 },
+                onNavigateToMyBookings = {
+                    navController.navigate(Screen.MyBookingsScreen.route)
+                },
                 onLogout = {
                     navController.navigate(Screen.LoginScreen.route) {
                         popUpTo(Screen.HomeScreen.route) { inclusive = true }
                     }
                 },
-                bookingViewModel = BookingViewModel(),
-
+                bookingViewModel = BookingViewModel()
             )
         }
+
         composable(Screen.NotificationScreen.route) {
             NotificationScreen(
                 viewModel = notificationViewModel,
