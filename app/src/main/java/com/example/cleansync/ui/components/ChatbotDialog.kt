@@ -1,9 +1,10 @@
 package com.example.cleansync.ui.components
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,60 +12,79 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.delay
 
 data class ChatMessage(val content: String, val isBot: Boolean)
 
 @Composable
 fun ChatbotDialog(onDismiss: () -> Unit) {
-    var messages by remember {
-        mutableStateOf(
-            listOf(
-                ChatMessage("Bot: Hi there! How can I help you today?", true)
-            )
-        )
-    }
+    var messages by remember { mutableStateOf(listOf(ChatMessage("Hi there! 👋 How can I help you today?", true))) }
     var inputText by remember { mutableStateOf("") }
+    var isBotTyping by remember { mutableStateOf(false) }
+    var pendingBotReply by remember { mutableStateOf<String?>(null) }
+
+    pendingBotReply?.let { reply ->
+        LaunchedEffect(reply) {
+            isBotTyping = true
+            delay(1500)
+            messages = messages + ChatMessage(reply, true)
+            isBotTyping = false
+            pendingBotReply = null
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {},
-        title = { Text("CleanSync Assistant") },
+        title = { Text("CleanSync Assistant 🤖", style = MaterialTheme.typography.headlineSmall) },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
                 LazyColumn(
                     modifier = Modifier
-                        .heightIn(min = 100.dp, max = 300.dp)
+                        .heightIn(min = 100.dp, max = 400.dp)
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp), // Add padding for the input area
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .weight(1f, false),
+                    reverseLayout = true
                 ) {
-                    items(messages) { message ->
-                        if (message.isBot) {
-                            BotMessageBubble(message.content)
-                        } else {
-                            UserMessageBubble(message.content)
+                    itemsIndexed(messages.reversed()) { _, message ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = expandVertically() + fadeIn()
+                        ) {
+                            if (message.isBot) {
+                                BotMessageBubble(message.content)
+                            } else {
+                                UserMessageBubble(message.content)
+                            }
+                        }
+                    }
+                    if (isBotTyping) {
+                        item {
+                            TypingIndicator()
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Options for the user to click
                 if (messages.size == 1) {
                     OptionButton("What is CleanSync?") {
-                        messages = messages + ChatMessage("CleanSync is a service that...", true)
+                        pendingBotReply = "CleanSync is a platform offering professional cleaning services. 🧹✨"
                     }
-                    OptionButton("How does the booking work?") {
-                        messages = messages + ChatMessage("Booking works by selecting a date and time...", true)
+                    OptionButton("How does booking work?") {
+                        pendingBotReply = "Booking is easy! Pick your date and time, and you're set! 📅✅"
                     }
                     OptionButton("See my bookings") {
-                        messages = messages + ChatMessage("Here are your upcoming bookings...", true)
+                        pendingBotReply = "Here's a summary of your upcoming bookings 📅."
                     }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Input Text Field for the user
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
@@ -78,10 +98,11 @@ fun ChatbotDialog(onDismiss: () -> Unit) {
                 Button(
                     onClick = {
                         if (inputText.isNotBlank()) {
-                            val userMessage = "You: $inputText"
-                            val botResponse = "Bot: ${getBotResponse(inputText)}"
-                            messages = messages + ChatMessage(userMessage, false) + ChatMessage(botResponse, true)
+                            val userMessage = ChatMessage(inputText, false)
+                            val botReply = getBotResponse(inputText)
+                            messages = messages + userMessage
                             inputText = ""
+                            pendingBotReply = botReply
                         }
                     },
                     modifier = Modifier.align(Alignment.End)
@@ -98,16 +119,22 @@ fun BotMessageBubble(message: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .wrapContentWidth(Alignment.Start) // Ensures message takes only as much width as needed
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.Start
     ) {
-        // Left-aligned bubble for the bot
         Box(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.secondary, shape = MaterialTheme.shapes.medium)
-                .padding(8.dp)
+                .background(
+                    color = Color(0xFFF0F0F0),
+                    shape = MaterialTheme.shapes.medium
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            Text(message, color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Normal)
+            Text(
+                text = message,
+                color = Color.Black,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
+            )
         }
     }
 }
@@ -118,33 +145,58 @@ fun UserMessageBubble(message: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        horizontalArrangement = Arrangement.End // This aligns the user message to the right
+        horizontalArrangement = Arrangement.End
     ) {
-        // Right-aligned bubble for the user
         Box(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primary, shape = MaterialTheme.shapes.medium)
-                .padding(8.dp)
-                .wrapContentWidth(Alignment.End) // Ensures message takes only as much width as needed
+                .background(
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = MaterialTheme.shapes.medium
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
-            Text(message, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Normal)
+            Text(
+                text = message,
+                color = MaterialTheme.colorScheme.onPrimary,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Normal)
+            )
         }
     }
 }
 
 @Composable
+fun TypingIndicator() {
+    Text(
+        text = "Bot is typing...",
+        modifier = Modifier
+            .padding(8.dp),
+        color = Color.Gray,
+        style = MaterialTheme.typography.bodySmall
+    )
+}
+
+@Composable
 fun OptionButton(label: String, onClick: () -> Unit) {
-    TextButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
 fun getBotResponse(input: String): String {
     return when {
-        input.contains("book", ignoreCase = true) -> "You can book the cleaning by clicking on empty dates in calendar or 'Book Now' button on the dashboard!"
+        input.contains("book", ignoreCase = true) -> "You can book a cleaning from your dashboard 📅!"
         input.contains("hello", ignoreCase = true) -> "Hello! 👋 How can I assist you today?"
-        input.contains("points", ignoreCase = true) -> "You can check your loyalty points in your profile."
-        input.contains("clean", ignoreCase = true) -> "We offer carpet and sofa cleaning services. Would you like to book one?"
-        else -> "I'm still learning! Try asking about bookings or points."
+        input.contains("points", ignoreCase = true) -> "Your loyalty points are available under Profile > Rewards 🏆."
+        input.contains("clean", ignoreCase = true) -> "We clean carpets, sofas, and more! 🧼✨"
+        else -> "I'm still learning! Try asking about bookings, services, or points! 🙌"
     }
 }
