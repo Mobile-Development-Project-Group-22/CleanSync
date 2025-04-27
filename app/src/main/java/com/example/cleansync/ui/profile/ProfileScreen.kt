@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.example.cleansync.ui.profile.dialogs.*
+import com.example.cleansync.ui.profile.profileItems.ProfilePictureSection
 import com.google.firebase.auth.GoogleAuthProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -259,11 +260,5 @@ fun ProfileScreen(
         }
     }
 
-    LaunchedEffect(profileState) {
-        when (profileState) {
-            is ProfileState.Error -> Toast.makeText(context, profileState.message, Toast.LENGTH_LONG).show()
-            is ProfileState.Success -> if (profileState.user == null) onNavigateToLogin() else Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_LONG).show()
-            else -> {}
-        }
-    }
+
 }

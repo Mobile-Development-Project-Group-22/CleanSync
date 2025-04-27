@@ -8,25 +8,27 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.ProfileManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.firebase.Firebase
-import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.auth.auth
-import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import androidx.core.net.toUri
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.auth.userProfileChangeRequest
 
 class ProfileViewModel(
     private val profileManager: ProfileManager = ProfileManager()
 ) : ViewModel() {
+
     private val auth = FirebaseAuth.getInstance()
+
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Idle)
     val profileState: StateFlow<ProfileState> get() = _profileState
 
@@ -36,18 +38,19 @@ class ProfileViewModel(
     val isEmailVerified: Boolean
         get() = currentUser?.isEmailVerified ?: false
 
+    // Update user display name
     fun updateDisplayName(displayName: String) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
                 profileManager.updateDisplayName(displayName)
-                _profileState.value = ProfileState.Success(profileManager.currentUser)
+                _profileState.value = ProfileState.Success("Display name updated successfully")
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update name: ${e.message}")
             }
         }
     }
-    // Upload profile picture
+
     fun uploadProfileImage(
         uri: Uri,
         onSuccess: (FirebaseUser?) -> Unit,
@@ -57,34 +60,35 @@ class ProfileViewModel(
         viewModelScope.launch {
             try {
                 val user = Firebase.auth.currentUser ?: throw Exception("User not logged in")
-                val storageRef: StorageReference =
-                    FirebaseStorage.getInstance().reference.child("profile_pictures/${user.uid}")
+                val storageRef = FirebaseStorage.getInstance().reference.child("profile_pictures/${user.uid}")
 
-                // Upload the image
-                storageRef.putFile(uri).await()
+                val uploadTaskSnapshot = storageRef.putFile(uri).await()
 
-                // Get the download URL
+                if (uploadTaskSnapshot.metadata == null) {
+                    throw Exception("Upload failed. Metadata is null.")
+                }
+
                 val downloadUrl = storageRef.downloadUrl.await().toString()
 
-                // Update the user's Firebase Auth profile
                 val profileUpdates = userProfileChangeRequest {
-                    photoUri = Uri.parse(downloadUrl)
+                    photoUri = downloadUrl.toUri()
                 }
                 user.updateProfile(profileUpdates).await()
 
-                // Update Firestore with the new photo URL
+                user.reload().await()
+
                 profileManager.updateUserPhotoUrlInFirestore(downloadUrl)
 
-                // Trigger success callback with updated user
-                onSuccess(profileManager.currentUser)
+                onSuccess(user)
+                _profileState.value = ProfileState.Success("Profile picture updated successfully")
+
             } catch (e: Exception) {
-                // Trigger failure callback with error message
                 onFailure(e.message ?: "Failed to upload image")
                 Log.e("ProfileViewModel", "Error uploading profile image: ${e.message}")
+                _profileState.value = ProfileState.Error("Error uploading image: ${e.message}")
             }
         }
     }
-
 
     // Update profile picture
     fun updateProfilePicture(photoUri: Uri) {
@@ -92,26 +96,27 @@ class ProfileViewModel(
         viewModelScope.launch {
             try {
                 profileManager.updateProfilePicture(photoUri)
-                _profileState.value = ProfileState.Success(profileManager.currentUser)
+                _profileState.value = ProfileState.Success("Profile picture updated successfully")
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update picture: ${e.message}")
             }
         }
     }
 
-    // Update email
+    // Update user email
     fun updateEmail(newEmail: String) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
             try {
-                profileManager.updateEmail(newEmail) // Sync with Firebase and Firestore
-                _profileState.value = ProfileState.Success(profileManager.currentUser)
+                profileManager.updateEmail(newEmail)
+                _profileState.value = ProfileState.Success("Email updated successfully")
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to update email: ${e.message}")
             }
         }
     }
 
+    // Delete user password
     fun deletePassword(
         currentPassword: String,
         onSuccess: () -> Unit,
@@ -135,6 +140,7 @@ class ProfileViewModel(
         }
     }
 
+    // Add password to user
     fun addPasswordToUser(password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         _profileState.value = ProfileState.Loading
         viewModelScope.launch {
@@ -144,7 +150,7 @@ class ProfileViewModel(
                 user.updatePassword(password).await()  // Use kotlinx-coroutines-play-services for await()
 
                 onSuccess()
-                _profileState.value = ProfileState.Success(profileManager.currentUser)
+                _profileState.value = ProfileState.Success("Password updated successfully")
             } catch (e: Exception) {
                 val errorMsg = e.message ?: "Failed to update password"
                 onFailure(errorMsg)
@@ -152,7 +158,6 @@ class ProfileViewModel(
             }
         }
     }
-
 
     // Change password
     fun changePassword(
@@ -179,6 +184,7 @@ class ProfileViewModel(
         }
     }
 
+    // Re-authenticate user and delete account
     fun reAuthenticateAndDeleteUser(
         password: String?,
         context: Context,
@@ -204,24 +210,17 @@ class ProfileViewModel(
                         onSuccess()
                         // Optionally, you can sign out the user after deletion
                         FirebaseAuth.getInstance().signOut()
-                    } else if (deleteTask.exception?.message == "A network error (such as timeout, interrupted connection or unreachable host) has occurred.") {
-                        onFailure("Network error. Please try again.")
-                        Log.e("ProfileViewModel", "Network error: ${deleteTask.exception?.message}")
-                    } else if (deleteTask.exception?.message == "The password is invalid or the user does not have a password.") {
-                        onFailure("Invalid password. Please try again.")
-                        Log.e("ProfileViewModel", "Invalid password: ${deleteTask.exception?.message}")
                     } else {
                         onFailure("Failed to delete account")
-                        Log.e("ProfileViewModel", "Failed to delete account: ${deleteTask.exception?.message}")
                     }
                 }
             } else {
                 onFailure("Reauthentication failed")
-                Log.e("ProfileViewModel", "Reauthentication failed: ${task.exception?.message}")
             }
         }
     }
 
+    // Re-authenticate with Google
     fun reAuthenticateWithGoogle(
         context: Context,
         onSuccess: () -> Unit,
@@ -241,44 +240,13 @@ class ProfileViewModel(
                         onSuccess()
                     } else {
                         onFailure("Re-authentication failed. Please sign in again.")
-                        Log.e(
-                            "ProfileViewModel",
-                            "Re-authentication failed: ${task.exception?.message}"
-                        )
                     }
                 }
             } else {
                 onFailure("Google Sign-In token is missing.")
-                Log.e("ProfileViewModel", "Google Sign-In token is missing.")
             }
         } else {
             onFailure("No user is currently signed in.")
-            Log.e("ProfileViewModel", "No user is currently signed in.")
-        }
-    }
-
-    private fun reAuthenticateWithEmailPassword(
-        user: FirebaseUser,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val credential = EmailAuthProvider.getCredential(user.email ?: "", password)
-
-        user.reauthenticate(credential).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // Proceed to delete user
-                user.delete().addOnCompleteListener { deleteTask ->
-                    if (deleteTask.isSuccessful) {
-                        onSuccess() // Success callback
-                    } else {
-                        onFailure("Failed to delete account")
-                    }
-                }
-            } else {
-                onFailure("Re-authentication failed. Please check your password.")
-                Log.e("ProfileViewModel", "Re-authentication failed: ${task.exception?.message}")
-            }
         }
     }
 
@@ -286,7 +254,6 @@ class ProfileViewModel(
         viewModelScope.launch {
             try {
                 profileManager.signOut()
-                _profileState.value = ProfileState.Idle
             } catch (e: Exception) {
                 _profileState.value = ProfileState.Error("Failed to sign out: ${e.message}")
             }
@@ -296,8 +263,8 @@ class ProfileViewModel(
 
 // UI States for Profile
 sealed class ProfileState {
-    object Idle : ProfileState()
-    object Loading : ProfileState()
-    data class Success(val user: FirebaseUser?) : ProfileState()
-    data class Error(val message: String) : ProfileState()
+    object Idle : ProfileState() // Initial state
+    object Loading : ProfileState() // Represents a loading state
+    data class Success(val message: String) : ProfileState() // Represents success
+    data class Error(val error: String) : ProfileState() // Represents error
 }
