@@ -49,9 +49,16 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Notifications",
-                        textAlign = TextAlign.Center,
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Notifications",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.align(Alignment.Center)
+                                .padding(end = 18.dp) // Padding around the title
+                                .fillMaxWidth(), // Fill the width to center the text
                         )
+                    }
                         },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
@@ -63,7 +70,8 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
                             Text("Clear All", color = MaterialTheme.colorScheme.onPrimary)
                         }
                     }
-                }
+                },
+                modifier = Modifier.height(80.dp)
             )
         }
     ) { padding ->

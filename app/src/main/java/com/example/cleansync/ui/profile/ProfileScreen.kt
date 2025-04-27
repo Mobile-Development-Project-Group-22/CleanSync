@@ -100,12 +100,16 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Profile",
-                        style = MaterialTheme.typography.headlineSmall,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center,
-                    )
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            "Profile",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.align(Alignment.Center)
+                                .padding(start = 22.dp) // Padding around the title
+                                .fillMaxWidth(), // Fill the width to center the text
+                        )
+                    }
                 },
                 actions = {
                     AnimatedContent(targetState = isDarkMode, label = "ThemeIcon") { dark ->
@@ -113,7 +117,9 @@ fun ProfileScreen(
                             isDarkMode = !isDarkMode
                             shouldSaveTheme = true
                             onThemeToggle(isDarkMode)
-                        }) {
+                        },
+                            modifier = Modifier.padding(bottom = 16.dp)
+                            ) {
                             Icon(
                                 imageVector = if (dark) Icons.Default.DarkMode else Icons.Default.LightMode,
                                 contentDescription = "Toggle Theme"
@@ -123,8 +129,9 @@ fun ProfileScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                modifier = Modifier.height(80.dp)
             )
         }
     ) { innerPadding ->
