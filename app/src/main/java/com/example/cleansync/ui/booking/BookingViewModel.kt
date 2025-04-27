@@ -44,7 +44,49 @@ class BookingViewModel : ViewModel() {
 
     var isSendingEmail by mutableStateOf(false)
     var emailSentSuccess by mutableStateOf<Boolean?>(null)
+    //coupon
+    var couponCode by mutableStateOf("")
+    var couponApplied by mutableStateOf(false)
+    var couponMessage by mutableStateOf<String?>(null)
+    private var originalPrice: Float? = null
+    val estimatedPriceCalculated: Boolean
+        get() = estimatedPrice != null
 
+    fun applyCoupon() {
+        val code = couponCode.trim().uppercase()
+
+        if (estimatedPrice == null) {
+            errorMessage = "Calculate price before applying coupon"
+            return
+        }
+
+        if (!couponApplied) {
+            originalPrice = estimatedPrice // Save original to allow multiple applications
+        }
+
+        when (code) {
+            "DISCOUNT10" -> {
+                estimatedPrice = originalPrice?.times(0.9f)
+                couponApplied = true
+                couponMessage = "🎉 10% discount applied!"
+                errorMessage = null
+            }
+
+            "JANNE" -> {
+                estimatedPrice = originalPrice?.times(0.5f)
+                couponApplied = true
+                couponMessage = "🎉 50% discount applied!"
+                errorMessage = null
+            }
+
+            else -> {
+                errorMessage = "❌ Invalid coupon code"
+                couponMessage = null
+                couponApplied = false
+                estimatedPrice = originalPrice
+            }
+        }
+    }
     var length by mutableStateOf("")
     var width by mutableStateOf("")
     var estimatedPrice by mutableStateOf<Float?>(null)
@@ -94,6 +136,10 @@ class BookingViewModel : ViewModel() {
         showInputFields = false
         errorMessage = null
         fieldErrors = emptyMap()
+        // Reset coupon
+        couponCode = ""
+        couponApplied = false
+        couponMessage = null
     }
 
     fun validateInputs(): Boolean {
