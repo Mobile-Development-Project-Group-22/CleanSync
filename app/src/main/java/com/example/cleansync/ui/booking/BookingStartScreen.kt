@@ -17,6 +17,9 @@ fun BookingStartScreen(
     onBookingConfirmed: () -> Unit,
     onBookingCancelled: () -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        bookingViewModel.resetBooking()
+    }
     val context = LocalContext.current
     var showDatePicker by remember { mutableStateOf(false) }
     var showCouponField by remember { mutableStateOf(false) }
