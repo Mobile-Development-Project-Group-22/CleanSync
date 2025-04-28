@@ -74,11 +74,13 @@ To connect CleanSync with Firebase services:
 > *(Screenshots to be added soon)*
 
 Example Screens:
-- Login/Register
-- Home Page
-- Booking Interface
-- Profile and Settings Pages
-
+- Login/Register ![Screenshot_20250428_135350.png](Screenshot_20250428_135350.png)![Screenshot_20250428_135401.png](Screenshot_20250428_135401.png)
+- Home Page![Screenshot_20250428_135436.png](Screenshot_20250428_135436.png)
+- Booking Interface![Screenshot_20250428_135446.png](Screenshot_20250428_135446.png)
+- Notifications![Screenshot_20250428_135454.png](Screenshot_20250428_135454.png)
+- Profile Pages![Screenshot_20250428_135504.png](Screenshot_20250428_135504.png)
+- Settings ![Screenshot_20250428_135518.png](Screenshot_20250428_135518.png)
+- About Us ![Screenshot_20250428_135530.png](Screenshot_20250428_135530.png)
 ---
 
 ## 📚 Pages Overview
