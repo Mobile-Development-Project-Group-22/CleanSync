@@ -217,7 +217,9 @@ class BookingViewModel : ViewModel() {
         Name: $name
         Address: $streetAddress, $postalCode $city
         Date & Time: $formattedDateTime
-        Price: $estimatedPrice €
+        Estimated Price: €$estimatedPrice
+        Pickup & Delivery Fee: €10.0
+        Total Price: €$totalPrice
     """.trimIndent()
 
         val emailRequest = EmailRequest(
@@ -227,7 +229,7 @@ class BookingViewModel : ViewModel() {
                     "subject" to "Booking Confirmation"
                 )
             ),
-            from = mapOf("email" to "t3shro00@students.oamk.fi"),  // Your sender email
+            from = mapOf("email" to "t3shro00@students.oamk.fi"),
             content = listOf(
                 mapOf("type" to "text/plain", "value" to "Thank you for your booking!\n\n$bookingDetails")
             )
@@ -244,6 +246,7 @@ class BookingViewModel : ViewModel() {
             }
         }
     }
+
 
     fun saveBookingToFirestore(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         val userId = auth.currentUser?.uid
