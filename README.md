@@ -69,32 +69,31 @@ To connect CleanSync with Firebase services:
 - 🎨 Material Design 3 UI Components
 
 ---
-
 🖼️ App UI Preview
 (Screenshots preview below — optimized for layout)
 
 Login / Register
-
-<img src="Screenshot_20250428_135350.png" alt="Login" width="250"/> <img src="Screenshot_20250428_135401.png" alt="Register" width="250"/>
-
+Login	Register
+<img src="Screenshot_20250428_135350.png" alt="Login" width="250"/>	<img src="Screenshot_20250428_135401.png" alt="Register" width="250"/>
 Home Page
-
+Home Page
 <img src="Screenshot_20250428_135436.png" alt="Home Page" width="250"/>
 Booking Interface
-
+Booking Interface
 <img src="Screenshot_20250428_135446.png" alt="Booking" width="250"/>
 Notifications
-
+Notifications
 <img src="Screenshot_20250428_135454.png" alt="Notifications" width="250"/>
 Profile Page
-
+Profile Page
 <img src="Screenshot_20250428_135504.png" alt="Profile" width="250"/>
 Settings
-
+Settings
 <img src="Screenshot_20250428_135518.png" alt="Settings" width="250"/>
 About Us
-
+About Us
 <img src="Screenshot_20250428_135530.png" alt="About Us" width="250"/>
+
 ---
 
 ## 📚 Pages Overview
