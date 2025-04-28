@@ -1,10 +1,3 @@
-Perfect — thanks for providing the **folder structure** of your CleanSync project.
-
-Now based on what you showed me (`data`, `navigation`, `ui`, `utils`, etc.), I’ll **update and tailor the README** even better to match your actual project structure.
-
-Here’s the **final professional version** for your CleanSync project:
-
----
 
 # 🧹 CleanSync
 
@@ -190,17 +183,12 @@ Distributed under the **MIT License**. See `LICENSE` file for details.
 
 **Mobile Development Project - Group 22**
 
-- Romansh Shrestha
-- [Other Team Members] *(update with real names)*
+- Romansh Shrestha - t3shro00@students.oamk.fi
+- Seraj Shekh - t3shse@students.oamk.fi
+- Rohit Pariyar - t3paro00@students.oamk.fi
 
 ---
 
 ✅ **CleanSync** — Clean, Simple, and Smart Mobile Profile Management.
 
----
 
----
-
-Would you also like me to generate a second, *fancy version* with collapsible `<details>` sections so your README is even cleaner and expandable? 🚀  
-It’s very professional and often seen in big open-source projects.  
-Would you want that? 🎯
