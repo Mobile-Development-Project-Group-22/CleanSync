@@ -1,6 +1,7 @@
 
 # 🧹 CleanSync
 
+CleanSync is an Android application designed to provide users with a streamlined and user-friendly way to manage their profiles. It offers features such as updating profile pictures, editing user information, and handling email verification. The app leverages modern Android development practices, including Jetpack Compose, Kotlin, and Firebase.
 ---
 
 ## 📑 Table of Contents
