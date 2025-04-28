@@ -69,18 +69,31 @@ To connect CleanSync with Firebase services:
 
 ---
 
-## 🖼️ App UI Preview
+🖼️ App UI Preview
+(Screenshots preview below — optimized for layout)
 
-> *(Screenshots to be added soon)*
+Login / Register
 
-Example Screens:
-- Login/Register ![Screenshot_20250428_135350.png](Screenshot_20250428_135350.png)![Screenshot_20250428_135401.png](Screenshot_20250428_135401.png)
-- Home Page![Screenshot_20250428_135436.png](Screenshot_20250428_135436.png)
-- Booking Interface![Screenshot_20250428_135446.png](Screenshot_20250428_135446.png)
-- Notifications![Screenshot_20250428_135454.png](Screenshot_20250428_135454.png)
-- Profile Pages![Screenshot_20250428_135504.png](Screenshot_20250428_135504.png)
-- Settings ![Screenshot_20250428_135518.png](Screenshot_20250428_135518.png)
-- About Us ![Screenshot_20250428_135530.png](Screenshot_20250428_135530.png)
+<img src="Screenshot_20250428_135350.png" alt="Login" width="250"/> <img src="Screenshot_20250428_135401.png" alt="Register" width="250"/>
+
+Home Page
+
+<img src="Screenshot_20250428_135436.png" alt="Home Page" width="250"/>
+Booking Interface
+
+<img src="Screenshot_20250428_135446.png" alt="Booking" width="250"/>
+Notifications
+
+<img src="Screenshot_20250428_135454.png" alt="Notifications" width="250"/>
+Profile Page
+
+<img src="Screenshot_20250428_135504.png" alt="Profile" width="250"/>
+Settings
+
+<img src="Screenshot_20250428_135518.png" alt="Settings" width="250"/>
+About Us
+
+<img src="Screenshot_20250428_135530.png" alt="About Us" width="250"/>
 ---
 
 ## 📚 Pages Overview
