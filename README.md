@@ -83,8 +83,7 @@ Home Page
 
 Booking Interface
 
-<img src="Screenshot_20250428_135446.png" alt="Booking" width="250"/>
-<img src="Screenshot_20250428_143724.png" alt="Booking List" width="250"/>
+<img src="Screenshot_20250428_135446.png" alt="Booking" width="250"/> <img src="Screenshot_20250428_143724.png" alt="Booking List" width="250"/>
 
 Notifications
 
