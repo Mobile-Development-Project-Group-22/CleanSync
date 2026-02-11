@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.booking
 
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,8 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.example.cleansync.ai.CarpetImageAnalyzer
+import com.example.cleansync.ui.booking.components.AIHelperButton
 import com.example.cleansync.ui.booking.components.CarpetInputForm
 import com.example.cleansync.ui.booking.components.DateAndHourPicker
+import kotlinx.coroutines.launch
 
 @Composable
 fun BookingStartScreen(
@@ -21,33 +25,94 @@ fun BookingStartScreen(
         bookingViewModel.resetBooking()
     }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     var showDatePicker by remember { mutableStateOf(false) }
     var showCouponField by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp)
-    ) {
-        Text(
-            text = "Book Carpet Cleaning",
-            style = MaterialTheme.typography.headlineSmall
-        )
-
-        if (!bookingViewModel.estimatedPriceCalculated) {
-            Button(onClick = { bookingViewModel.toggleInputFields() }) {
-                Text("Start Calculation")
+    var isAnalyzingImage by remember { mutableStateOf(false) }
+    var analysisMessage by remember { mutableStateOf<String?>(null) }
+    
+    // AI Image Analyzer
+    val carpetAnalyzer = remember { CarpetImageAnalyzer(context) }
+    
+    // Handle image capture from AI helper
+    val handleImageCapture: (Uri) -> Unit = { imageUri ->
+        coroutineScope.launch {
+            isAnalyzingImage = true
+            analysisMessage = "🤖 Analyzing carpet image..."
+            
+            try {
+                val result = carpetAnalyzer.analyzeCarpetImage(imageUri)
+                
+                if (result != null) {
+                    // Update the booking fields with AI results
+                    bookingViewModel.length = result.length.toString()
+                    bookingViewModel.width = result.width.toString()
+                    bookingViewModel.fabricType = result.fabricType
+                    
+                    analysisMessage = "✅ Detected: ${result.fabricType} carpet (${result.confidence.toInt()}% confidence)"
+                    
+                    // Auto-calculate price
+                    kotlinx.coroutines.delay(1000)
+                    bookingViewModel.calculatePrice()
+                    showCouponField = true
+                } else {
+                    analysisMessage = "❌ Could not analyze image. Please enter manually."
+                }
+            } catch (e: Exception) {
+                analysisMessage = "❌ Analysis failed: ${e.message}"
+            } finally {
+                isAnalyzingImage = false
+                // Clear message after 5 seconds
+                kotlinx.coroutines.delay(5000)
+                analysisMessage = null
             }
         }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp)
+        ) {
+            Text(
+                text = "Book Carpet Cleaning",
+                style = MaterialTheme.typography.headlineSmall
+            )
+            
+            // AI Analysis message
+            analysisMessage?.let { message ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Text(
+                        text = message,
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+
+            if (!bookingViewModel.estimatedPriceCalculated) {
+                Button(onClick = { bookingViewModel.toggleInputFields() }) {
+                    Text("Start Calculation")
+                }
+            }
 
         AnimatedVisibility(visible = bookingViewModel.showInputFields && !bookingViewModel.estimatedPriceCalculated) {
             CarpetInputForm(
                 length = bookingViewModel.length,
                 width = bookingViewModel.width,
+                fabricType = bookingViewModel.fabricType,
+                fabricTypes = bookingViewModel.fabricTypes,
                 onLengthChange = { bookingViewModel.length = it },
                 onWidthChange = { bookingViewModel.width = it },
+                onFabricTypeChange = { bookingViewModel.fabricType = it },
                 onCalculate = {
                     bookingViewModel.calculatePrice()
                     showCouponField = true
@@ -182,4 +247,13 @@ fun BookingStartScreen(
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
     }
+    
+    // AI Helper Button - Floating Action Button
+    if (bookingViewModel.showInputFields && !bookingViewModel.estimatedPriceCalculated) {
+        AIHelperButton(
+            onImageCaptured = handleImageCapture,
+            isAnalyzing = isAnalyzingImage
+        )
+    }
+  }
 }
