@@ -12,13 +12,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarpetInputForm(
     length: String,
     width: String,
+    fabricType: String,
+    fabricTypes: List<String>,
     onLengthChange: (String) -> Unit,
     onWidthChange: (String) -> Unit,
+    onFabricTypeChange: (String) -> Unit,
     onCalculate: () -> Unit
 ) {
     val maxCarpetSize = 50.0
@@ -27,6 +34,9 @@ fun CarpetInputForm(
     // Error state and animation
     var showError by remember { mutableStateOf(false) }
     val offsetX = remember { Animatable(0f) }
+    
+    // Dropdown state
+    var expanded by remember { mutableStateOf(false) }
 
     // Shake animation
     suspend fun shake() {
@@ -92,6 +102,42 @@ fun CarpetInputForm(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
+        
+        // Fabric Type Dropdown
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = fabricType,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Fabric Type") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                fabricTypes.forEach { fabric ->
+                    DropdownMenuItem(
+                        text = { Text(fabric) },
+                        onClick = {
+                            onFabricTypeChange(fabric)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
 
         if (showError) {
             Text(

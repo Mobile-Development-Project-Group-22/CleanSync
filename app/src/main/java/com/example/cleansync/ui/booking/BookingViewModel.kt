@@ -91,8 +91,22 @@ class BookingViewModel : ViewModel() {
         calculateTotalPrice()
     }
 
+    // Fabric types
+    val fabricTypes = listOf(
+        "Wool",
+        "Cotton",
+        "Silk",
+        "Polyester",
+        "Nylon",
+        "Jute",
+        "Sisal",
+        "Shag",
+        "Persian/Oriental"
+    )
+    
     var length by mutableStateOf("")
     var width by mutableStateOf("")
+    var fabricType by mutableStateOf("")
     var estimatedPrice by mutableStateOf<Float?>(null)
     // To store total price including the pickup and delivery fee
     var totalPrice by mutableStateOf<Float?>(null)
@@ -139,6 +153,7 @@ class BookingViewModel : ViewModel() {
     fun resetBooking() {
         length = ""
         width = ""
+        fabricType = ""
         estimatedPrice = null
         totalPrice = null
         selectedDateTime = null
@@ -272,6 +287,7 @@ class BookingViewModel : ViewModel() {
             city = city,
             length = length,
             width = width,
+            fabricType = fabricType,
             estimatedPrice = estimatedPrice!!,
             totalPrice = totalPrice ?: (estimatedPrice!! + pickupAndDeliveryFee),
             bookingDateTime = formattedDateTime,
