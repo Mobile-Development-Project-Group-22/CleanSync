@@ -19,6 +19,8 @@ import androidx.work.WorkManager
 import com.example.cleansync.model.Booking
 import com.example.cleansync.utils.NotificationScheduler
 import com.firebase.ui.auth.BuildConfig
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 import java.util.*
 
@@ -32,6 +34,19 @@ fun BookingCard(
     onShowExplanation: () -> Unit
 ) {
     var showDebugDialog by remember { mutableStateOf(false) }
+    
+    // Check if booking is in the past
+    val isPastBooking = remember(booking.bookingDateTime) {
+        try {
+            val bookingDate = LocalDateTime.parse(
+                booking.bookingDateTime,
+                DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
+            )
+            bookingDate.isBefore(LocalDateTime.now())
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -52,11 +67,30 @@ fun BookingCard(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = booking.bookingDateTime,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = booking.bookingDateTime,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (isPastBooking) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.small,
+                                tonalElevation = 2.dp
+                            ) {
+                                Text(
+                                    text = "Past",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = booking.streetAddress,
