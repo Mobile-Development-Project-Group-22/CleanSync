@@ -1,3 +1,4 @@
+// CleanSyncApp.kt
 package com.example.cleansync
 
 import androidx.compose.foundation.layout.padding
@@ -6,45 +7,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cleansync.navigation.AppNavHost
 import com.example.cleansync.navigation.BottomNavBar
 import com.example.cleansync.navigation.Screen
-import com.example.cleansync.ui.auth.LoginScreen
-import com.example.cleansync.ui.auth.SignupScreen
-import com.example.cleansync.ui.home.HomeScreen
 import com.example.cleansync.ui.auth.AuthViewModel
-import com.example.cleansync.ui.auth.PasswordResetScreen
-import com.example.cleansync.ui.booking.BookingConfirmationScreen
-import com.example.cleansync.ui.booking.BookingFormScreen
-import com.example.cleansync.ui.booking.BookingStartScreen
-import com.example.cleansync.ui.booking.MyBookingsScreen
-import com.example.cleansync.ui.notifications.NotificationScreen
-import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
-import com.example.cleansync.ui.notifications.NotificationViewModel
-import com.example.cleansync.ui.profile.ProfileScreen
-import com.example.cleansync.ui.profile.ProfileViewModel
 import com.example.cleansync.ui.booking.BookingViewModel
+import com.example.cleansync.ui.notifications.NotificationViewModel
+import com.example.cleansync.ui.theme.ThemeMode
 
 @Composable
 fun CleanSyncApp(
     authViewModel: AuthViewModel,
-    onThemeToggle: (Boolean) -> Unit
+    currentThemeMode: ThemeMode,
+    onThemeSelected: (ThemeMode) -> Unit
 ) {
     val notificationViewModel = NotificationViewModel()
     val navController = rememberNavController()
     val bookingViewModel: BookingViewModel = viewModel()
-
 
     MainScreen(
         navController = navController,
         authViewModel = authViewModel,
         notificationViewModel = notificationViewModel,
         bookingViewModel = bookingViewModel,
-        onThemeToggle = onThemeToggle
+        currentThemeMode = currentThemeMode,
+        onThemeSelected = onThemeSelected
     )
 }
 
@@ -54,7 +43,8 @@ fun MainScreen(
     authViewModel: AuthViewModel,
     notificationViewModel: NotificationViewModel,
     bookingViewModel: BookingViewModel,
-    onThemeToggle: (Boolean) -> Unit
+    currentThemeMode: ThemeMode,
+    onThemeSelected: (ThemeMode) -> Unit
 ) {
     val unreadCount = notificationViewModel.unreadNotificationsCount()
     val navBackStackEntry = navController.currentBackStackEntryAsState().value
@@ -84,12 +74,9 @@ fun MainScreen(
             authViewModel = authViewModel,
             notificationViewModel = notificationViewModel,
             bookingViewModel = bookingViewModel,
-            modifier = Modifier.padding(innerPadding),
-            onThemeToggle = onThemeToggle
+            currentThemeMode = currentThemeMode,
+            onThemeSelected = onThemeSelected,
+            modifier = Modifier.padding(innerPadding)
         )
     }
 }
-
-
-
-

@@ -3,7 +3,7 @@ package com.example.cleansync.ui.profile
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -12,19 +12,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.ripple
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cleansync.ui.notifications.NotificationSettingsViewModel
 import com.example.cleansync.ui.profile.dialogs.*
 import com.example.cleansync.ui.profile.profileItems.ProfilePictureSection
+import com.example.cleansync.ui.theme.ThemeMode
 import com.google.firebase.auth.GoogleAuthProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +32,8 @@ fun ProfileScreen(
     preferencesViewModel: NotificationSettingsViewModel,
     onNavigateToLogin: () -> Unit,
     onLogout: () -> Unit,
-    onThemeToggle: (Boolean) -> Unit,
+    currentThemeMode: ThemeMode,
+    onThemeSelected: (ThemeMode) -> Unit,
     onNavigateToBookings: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToSupport: () -> Unit,
@@ -46,6 +45,7 @@ fun ProfileScreen(
     val currentUser = profileViewModel.currentUser
     val context = LocalContext.current
 
+    // Dialog and input state
     var showReviewDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -56,27 +56,9 @@ fun ProfileScreen(
     var confirmNewPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-
-    val darkModeFlow = remember { ThemePreferenceManager.getDarkMode(context) }
-    val darkModePref by darkModeFlow.collectAsState(initial = false)
-
-    var isDarkMode by remember { mutableStateOf(darkModePref) }
-    var shouldSaveTheme by remember { mutableStateOf(false) }
-
     var showFAQDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(shouldSaveTheme) {
-        if (shouldSaveTheme) {
-            ThemePreferenceManager.saveDarkMode(context, isDarkMode)
-            shouldSaveTheme = false
-        }
-    }
-
-    val hasPasswordProvider = currentUser?.providerData?.any {
-        it.providerId == "password"
-    } == true
 
     LaunchedEffect(Unit) {
         preferencesViewModel.loadPreferences()
@@ -106,24 +88,37 @@ fun ProfileScreen(
                             "Profile",
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.align(Alignment.Center)
-                                .padding(start = 22.dp) // Padding around the title
-                                .fillMaxWidth(), // Fill the width to center the text
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(start = 22.dp)
+                                .fillMaxWidth()
                         )
                     }
                 },
                 actions = {
-                    AnimatedContent(targetState = isDarkMode, label = "ThemeIcon") { dark ->
-                        IconButton(onClick = {
-                            isDarkMode = !isDarkMode
-                            shouldSaveTheme = true
-                            onThemeToggle(isDarkMode)
-                        },
+                    AnimatedContent(
+                        targetState = currentThemeMode,
+                        label = "ThemeIcon"
+                    ) { mode ->
+                        IconButton(
+                            onClick = {
+                                val nextMode = when (mode) {
+                                    ThemeMode.SYSTEM -> ThemeMode.LIGHT
+                                    ThemeMode.LIGHT -> ThemeMode.DARK
+                                    ThemeMode.DARK -> ThemeMode.SYSTEM
+                                }
+                                onThemeSelected(nextMode)
+                            },
                             modifier = Modifier.padding(bottom = 16.dp)
-                            ) {
+                        ) {
+                            val icon = when (mode) {
+                                ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
+                                ThemeMode.LIGHT -> Icons.Default.LightMode
+                                ThemeMode.DARK -> Icons.Default.DarkMode
+                            }
                             Icon(
-                                imageVector = if (dark) Icons.Default.DarkMode else Icons.Default.LightMode,
-                                contentDescription = "Toggle Theme"
+                                imageVector = icon,
+                                contentDescription = "Change Theme"
                             )
                         }
                     }
@@ -139,7 +134,9 @@ fun ProfileScreen(
         Box(modifier = Modifier.padding(innerPadding)) {
             if (profileState is ProfileState.Loading) {
                 Box(
-                    modifier = Modifier.fillMaxSize().background(Color.White),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -161,11 +158,8 @@ fun ProfileScreen(
                                 .fillMaxWidth()
                                 .clickable(
                                     onClick = action,
-                                    indication = ripple(
-                                        bounded = true,
-                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                                    ),
-                                    interactionSource = remember { MutableInteractionSource() }
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = LocalIndication.current
                                 )
                                 .padding(vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -177,32 +171,32 @@ fun ProfileScreen(
                                 modifier = Modifier.weight(1f)
                             )
                         }
-                        HorizontalDivider(
+                        Divider(
                             thickness = 1.dp,
                             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+
                     Button(
                         onClick = {
                             profileViewModel.signOut()
                             onLogout()
                         },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .animateContentSize(),
+                            .fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         ),
-                        shape = MaterialTheme.shapes.medium,
-                        elevation = ButtonDefaults.buttonElevation(4.dp)
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Text("Logout", style = MaterialTheme.typography.labelLarge)
                     }
                 }
 
+                // Password & Delete Dialogs
                 if (showChangePasswordDialog) {
                     ChangePasswordDialog(
                         currentPassword, newPassword, confirmNewPassword,
@@ -259,6 +253,4 @@ fun ProfileScreen(
             }
         }
     }
-
-
 }

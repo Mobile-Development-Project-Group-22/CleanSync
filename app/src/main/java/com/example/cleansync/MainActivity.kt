@@ -14,8 +14,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import com.example.cleansync.ui.auth.AuthViewModel
-import com.example.cleansync.ui.profile.ThemePreferenceManager
+import com.example.cleansync.ui.theme.ThemePreferenceManager
 import com.example.cleansync.ui.theme.CleanSyncTheme
+import com.example.cleansync.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 
 // MainActivity
@@ -26,28 +27,32 @@ class MainActivity : ComponentActivity() {
         val context = this
 
         setContent {
-            val defaultDarkTheme = isSystemInDarkTheme()
-            var isDarkMode by remember { mutableStateOf(defaultDarkTheme) }
 
-            // 🔥 Load the saved preference
+            var themeMode by remember { mutableStateOf(ThemeMode.SYSTEM) }
+
             LaunchedEffect(Unit) {
-                ThemePreferenceManager.getDarkMode(context).collect {
-                    isDarkMode = it
-                }
+                ThemePreferenceManager
+                    .getThemeMode(this@MainActivity)
+                    .collect { themeMode = it }
             }
 
-            CleanSyncTheme(darkTheme = isDarkMode) {
+            CleanSyncTheme(themeMode = themeMode) {
+
                 CleanSyncApp(
                     authViewModel = AuthViewModel(),
-                    onThemeToggle = {
-                        isDarkMode = it
+                    currentThemeMode = themeMode,
+                    onThemeSelected = { mode ->
+                        themeMode = mode
                         lifecycleScope.launch {
-                            ThemePreferenceManager.saveDarkMode(context, it)
+                            ThemePreferenceManager
+                                .saveThemeMode(this@MainActivity, mode)
                         }
                     }
                 )
+
             }
         }
+
     }
 }
 
@@ -56,14 +61,16 @@ class MainActivity : ComponentActivity() {
 @Preview(showBackground = true)
 @Composable
 fun CleanSyncAppPreview() {
-    val defaultDarkTheme = isSystemInDarkTheme()
-    var isDarkMode by remember { mutableStateOf(defaultDarkTheme) }
 
-    CleanSyncTheme(darkTheme = isDarkMode) {
+    val previewThemeMode = ThemeMode.SYSTEM
+
+    CleanSyncTheme(themeMode = previewThemeMode) {
         CleanSyncApp(
             authViewModel = AuthViewModel(),
-            onThemeToggle = { newState -> isDarkMode = newState }
+            currentThemeMode = previewThemeMode,
+            onThemeSelected = {}
         )
     }
 }
+
 
