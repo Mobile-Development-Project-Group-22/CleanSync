@@ -1,6 +1,7 @@
 package com.example.cleansync.ui.auth
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.AuthManager
@@ -19,6 +20,9 @@ class AuthViewModel(
     private val authManager: AuthManager = AuthManager(),
 ) : ViewModel() {
 
+    // 🔹 SplashScreen control
+    var isAppReady = mutableStateOf(false)
+        private set
     sealed class AuthState {
         object Idle : AuthState()
         object Loading : AuthState()
@@ -38,6 +42,22 @@ class AuthViewModel(
     val isEmailVerified: Boolean
         get() = authManager.currentUser?.isEmailVerified ?: false
 
+    init {
+        viewModelScope.launch {
+            try {
+                val user = authManager.currentUser
+
+                if (user != null) {
+                    user.reload() // Refresh Firebase user
+                }
+
+            } catch (e: Exception) {
+                Log.e("AuthStartup", "Startup check failed: ${e.message}")
+            } finally {
+                isAppReady.value = true
+            }
+        }
+    }
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
