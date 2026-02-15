@@ -107,7 +107,7 @@ fun AppNavHost(
                         popUpTo(Screen.HomeScreen.route) { inclusive = true }
                     }
                 },
-                bookingViewModel = BookingViewModel()
+                bookingViewModel = bookingViewModel
             )
         }
 
