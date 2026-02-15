@@ -36,83 +36,96 @@ fun BookingCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable { onExpandToggle()
-                onShowExplanation()},
+            .padding(vertical = 6.dp)
+            .clickable { onExpandToggle(); onShowExplanation() },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
             contentColor = MaterialTheme.colorScheme.onSurface
         ),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "📅 ${booking.bookingDateTime}",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = "🏠 ${booking.streetAddress}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            // Show progress bar
-            BookingProgressBar(progressStage = booking.progressStage)
-
-            if (isExpanded) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                listOf(
-                    "👤 ${booking.name}",
-                    "📧 ${booking.email}",
-                    "📞 ${booking.phoneNumber}",
-                    "📏 ${booking.length}m x ${booking.width}m",
-                    "💶 Total Price: €${"%.2f".format(booking.totalPrice)}",
-                    "🏙️ ${booking.city}",
-                    "📬 ${booking.postalCode}"
-                ).forEach {
+        Column(modifier = Modifier.padding(18.dp)) {
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = booking.bookingDateTime,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = booking.streetAddress,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Progress Bar
+            BookingProgressBar(progressStage = booking.progressStage)
 
-                Spacer(modifier = Modifier.height(12.dp))
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(
+                // Details in a clean grid
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    InfoRow(icon = "👤", label = "Name", value = booking.name)
+                    InfoRow(icon = "📧", label = "Email", value = booking.email)
+                    InfoRow(icon = "📞", label = "Phone", value = booking.phoneNumber)
+                    InfoRow(icon = "📍", label = "City", value = "${booking.city}, ${booking.postalCode}")
+                    InfoRow(icon = "📏", label = "Size", value = "${booking.length}m × ${booking.width}m")
+                    InfoRow(icon = "💶", label = "Total", value = "€${"%.2f".format(booking.totalPrice)}")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Action Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    FilledTonalButton(
                         onClick = onEdit,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text("Edit")
                     }
 
-                    OutlinedButton(
+                    Button(
                         onClick = onCancel,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
                         )
                     ) {
-                        Icon(Icons.Default.Cancel, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            Icons.Default.Cancel,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text("Cancel")
                     }
 
                     if (BuildConfig.DEBUG) {
-                        OutlinedButton(
-                            onClick = { showDebugDialog = true },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary
-                            )
-                        ) {
-                            Text("🔧 Dev")
+                        IconButton(onClick = { showDebugDialog = true }) {
+                            Text("🔧", style = MaterialTheme.typography.titleMedium)
                         }
                     }
                 }
@@ -124,6 +137,32 @@ fun BookingCard(
         NotificationDebugDialog(onDismiss = { showDebugDialog = false })
     }
 }
+
+@Composable
+fun InfoRow(icon: String, label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = icon,
+            style = MaterialTheme.typography.titleMedium
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
 @Composable
 fun BookingProgressBar(progressStage: String) {
     val stages = listOf("Booked", "Collected", "Cleaned", "Returned")
@@ -132,43 +171,40 @@ fun BookingProgressBar(progressStage: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         stages.forEachIndexed { index, stage ->
-            // Check if the stage is completed or not
             val isCompleted = getProgressStageColor(progressStage, index) == "completed"
+            val circleColor = if (isCompleted) primaryColor else Color.Gray.copy(alpha = 0.4f)
 
-            // Circle color
-            val circleColor = if (isCompleted) primaryColor else Color.Gray
-
-            // Circle for the stage
             Box(
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(36.dp)
                     .background(
                         color = circleColor,
                         shape = CircleShape
-                    )
-                    .padding(4.dp),
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = stage.first().toString(),
-                    color = Color.White,
-                    style = MaterialTheme.typography.bodyLarge
+                    color = if (isCompleted) Color.White else Color.Gray,
+                    style = MaterialTheme.typography.titleSmall
                 )
             }
 
-            // Line after the circle
             if (index < stages.size - 1) {
-                Spacer(
+                Box(
                     modifier = Modifier
-                        .width(32.dp)
-                        .height(2.dp)
+                        .weight(1f)
+                        .height(3.dp)
+                        .padding(horizontal = 4.dp)
                         .background(
-                            color = if (getProgressStageColor(progressStage, index + 1) == "completed") primaryColor else Color.Gray
+                            color = if (getProgressStageColor(progressStage, index + 1) == "completed") 
+                                primaryColor else Color.Gray.copy(alpha = 0.3f),
+                            shape = MaterialTheme.shapes.small
                         )
                 )
             }

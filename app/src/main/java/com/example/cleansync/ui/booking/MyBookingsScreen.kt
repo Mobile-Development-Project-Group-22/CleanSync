@@ -68,32 +68,22 @@ fun MyBookingsScreen(
     }
 
     Scaffold(
-
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            "My Bookings",
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.align(Alignment.Center)
-                                .padding(end = 18.dp) // Padding around the title
-                                .fillMaxWidth(), // Fill the width to center the text
-                        )
-                    }
+                    Text(
+                        "My Bookings",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-
-                modifier = Modifier.height(80.dp)
-
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
-                 },
-
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
 
@@ -102,7 +92,10 @@ fun MyBookingsScreen(
             when {
                 loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 bookings.isEmpty() ->  EmptyBookingCard(onBookingClick)
-                else -> LazyColumn(contentPadding = PaddingValues(16.dp)) {
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     items(bookings.size) { index ->
                         val booking = bookings[index]
                         BookingCard(
