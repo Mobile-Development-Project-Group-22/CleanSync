@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -29,6 +31,18 @@ fun BookingFormScreen(
     val context = LocalContext.current
     val addressSuggestions by bookingViewModel.addressSuggestions.collectAsState()
     val errors = bookingViewModel.fieldErrors
+
+    // Auto-fill name and email from Firebase Auth
+    LaunchedEffect(Unit) {
+        FirebaseAuth.getInstance().currentUser?.let { user ->
+            if (bookingViewModel.name.isEmpty()) {
+                bookingViewModel.name = user.displayName ?: ""
+            }
+            if (bookingViewModel.email.isEmpty()) {
+                bookingViewModel.email = user.email ?: ""
+            }
+        }
+    }
 
     val locationPermissionState = rememberPermissionState(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
