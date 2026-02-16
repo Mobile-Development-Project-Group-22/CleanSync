@@ -2,6 +2,7 @@ package com.example.cleansync.data.repository
 
 import android.net.Uri
 import android.util.Log
+import com.example.cleansync.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,6 +20,17 @@ class ProfileManager {
     fun signOut() {
         auth.signOut()
         Log.d("ProfileManager", "User signed out.")
+    }
+
+
+    suspend fun getUserProfile(): User? {
+        val user = FirebaseAuth.getInstance().currentUser ?: return null
+        val snapshot = firestore.collection("users")
+            .document(user.uid)
+            .get()
+            .await()
+
+        return snapshot.toObject(User::class.java)
     }
 
     // Update email address

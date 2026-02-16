@@ -13,12 +13,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.storage.FirebaseStorage
-import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import androidx.core.net.toUri
+import com.example.cleansync.data.model.LoyaltyTier
+import com.example.cleansync.data.service.loyalty.LoyaltyManager
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.auth.userProfileChangeRequest
@@ -34,9 +35,48 @@ class ProfileViewModel(
 
     val currentUser = profileManager.currentUser
 
+
+    // Loyalty state for the current user
+    private val _loyaltyState = MutableStateFlow(LoyaltyUiState())
+    val loyaltyState: StateFlow<LoyaltyUiState> = _loyaltyState
+
     // check if the user's email is verified
     val isEmailVerified: Boolean
         get() = currentUser?.isEmailVerified ?: false
+
+
+
+    fun calculateProgress(totalSpent: Double, tier: LoyaltyTier): Float {
+        return when (tier) {
+            LoyaltyTier.BRONZE -> (totalSpent / 500).toFloat().coerceIn(0f, 1f)
+            LoyaltyTier.SILVER -> ((totalSpent - 500) / 500).toFloat().coerceIn(0f, 1f)
+            LoyaltyTier.GOLD -> 1f
+        }
+    }
+
+    fun loadLoyaltyData() {
+        viewModelScope.launch {
+            try {
+                val user = profileManager.getUserProfile() ?: return@launch
+
+                val progress = LoyaltyManager.calculateProgress(
+                    user.totalSpent,
+                    user.tier
+                )
+
+                _loyaltyState.value = LoyaltyUiState(
+                    loyaltyPoints = user.loyaltyPoints,
+                    totalSpent = user.totalSpent,
+                    tier = user.tier,
+                    progressToNextTier = progress
+                )
+
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error loading loyalty: ${e.message}")
+            }
+        }
+    }
+
 
     // Update user display name
     fun updateDisplayName(displayName: String) {
@@ -268,3 +308,11 @@ sealed class ProfileState {
     data class Success(val message: String) : ProfileState() // Represents success
     data class Error(val error: String) : ProfileState() // Represents error
 }
+
+
+data class LoyaltyUiState(
+    val loyaltyPoints: Int = 0,
+    val totalSpent: Double = 0.0,
+    val tier: LoyaltyTier = LoyaltyTier.BRONZE,
+    val progressToNextTier: Float = 0f
+)
