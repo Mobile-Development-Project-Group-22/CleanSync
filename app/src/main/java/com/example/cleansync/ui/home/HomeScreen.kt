@@ -1,5 +1,6 @@
 package com.example.cleansync.ui.home
 
+import android.media.Image
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -7,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +20,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.cleansync.model.Booking
@@ -32,6 +36,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import com.example.cleansync.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,10 +98,14 @@ fun HomeScreen(
                         FloatingActionButton(
                             onClick = { isChatOpen = true },
                             shape = CircleShape,
-                            containerColor = MaterialTheme.colorScheme.secondary,
+                            containerColor = Color.White,
                             contentColor = MaterialTheme.colorScheme.onSecondary
                         ) {
-                            Icon(Icons.Default.Chat, contentDescription = "Chat with Assistant")
+                            Image(
+                                painter = painterResource(id = R.drawable.chatbot), // Replace with your image resource
+                                contentDescription = "Chat with Assistant",
+                                modifier = Modifier.size(45.dp) // Adjust size as needed
+                            )
                         }
                     }
                 }
