@@ -132,6 +132,8 @@ dependencies {
 
     // Required for ListenableFuture
     implementation("com.google.guava:guava:31.0.1-android")
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.recyclerview)
 
     // Testing
     testImplementation(libs.junit)
