@@ -12,8 +12,17 @@ import com.example.cleansync.BuildConfig
 
 class EmailRepository {
     private val emailService: EmailService by lazy {
+        val loggingInterceptor = okhttp3.logging.HttpLoggingInterceptor().apply {
+            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+        }
+        
+        val client = okhttp3.OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .build()
+        
         Retrofit.Builder()
             .baseUrl("https://api.sendgrid.com/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(EmailService::class.java)
@@ -21,17 +30,28 @@ class EmailRepository {
 
     suspend fun sendConfirmationEmail(emailRequest: EmailRequest): Boolean {
         return try {
-
+            Log.d("EmailRepository", "Attempting to send email...")
+            Log.d("EmailRepository", "Recipient: ${emailRequest.personalizations}")
+            
             val response = emailService.sendEmail(emailRequest)
+            
+            Log.d("EmailRepository", "Response code: ${response.code()}")
+            Log.d("EmailRepository", "Response message: ${response.message()}")
+            
             if (response.isSuccessful) {
-                Log.d("EmailRepository", "Email sent successfully!")
+                Log.d("EmailRepository", "✅ Email sent successfully!")
                 true
             } else {
-                Log.e("EmailRepository", "Failed: ${response.code()} - ${response.errorBody()?.string()}")
+                val errorBody = response.errorBody()?.string()
+                Log.e("EmailRepository", "❌ Failed: ${response.code()}")
+                Log.e("EmailRepository", "Error body: $errorBody")
+                Log.e("EmailRepository", "Headers: ${response.headers()}")
                 false
             }
         } catch (e: Exception) {
-            Log.e("EmailRepository", "Exception: ${e.message}", e)
+            Log.e("EmailRepository", "❌ Exception occurred: ${e.message}", e)
+            Log.e("EmailRepository", "Exception type: ${e.javaClass.simpleName}")
+            e.printStackTrace()
             false
         }
     }
