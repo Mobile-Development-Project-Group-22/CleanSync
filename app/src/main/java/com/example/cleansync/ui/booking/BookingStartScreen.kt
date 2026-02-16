@@ -21,51 +21,65 @@ fun BookingStartScreen(
     onBookingConfirmed: () -> Unit,
     onBookingCancelled: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    
     LaunchedEffect(Unit) {
         bookingViewModel.resetBooking()
     }
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
+    
     var showDatePicker by remember { mutableStateOf(false) }
     var showCouponField by remember { mutableStateOf(false) }
     var isAnalyzingImage by remember { mutableStateOf(false) }
     var analysisMessage by remember { mutableStateOf<String?>(null) }
     
-    // AI Image Analyzer
-    val carpetAnalyzer = remember { CarpetImageAnalyzer(context) }
+    // AI Image Analyzer - Initialize safely
+    val carpetAnalyzer = remember { 
+        try {
+            CarpetImageAnalyzer(context)
+        } catch (e: Exception) {
+            android.util.Log.e("BookingStart", "Failed to initialize CarpetImageAnalyzer", e)
+            null
+        }
+    }
     
     // Handle image capture from AI helper
     val handleImageCapture: (Uri) -> Unit = { imageUri ->
-        coroutineScope.launch {
-            isAnalyzingImage = true
-            analysisMessage = "🤖 Analyzing carpet image..."
-            
-            try {
-                val result = carpetAnalyzer.analyzeCarpetImage(imageUri)
+        if (carpetAnalyzer != null) {
+            coroutineScope.launch {
+                isAnalyzingImage = true
+                analysisMessage = "🤖 Analyzing carpet image..."
                 
-                if (result != null) {
-                    // Update the booking fields with AI results
-                    bookingViewModel.length = result.length.toString()
-                    bookingViewModel.width = result.width.toString()
-                    bookingViewModel.fabricType = result.fabricType
+                try {
+                    val result = carpetAnalyzer.analyzeCarpetImage(imageUri)
                     
-                    analysisMessage = "✅ Detected: ${result.fabricType} carpet (${result.confidence.toInt()}% confidence)"
-                    
-                    // Auto-calculate price
-                    kotlinx.coroutines.delay(1000)
-                    bookingViewModel.calculatePrice()
-                    showCouponField = true
-                } else {
-                    analysisMessage = "❌ Could not analyze image. Please enter manually."
+                    if (result != null) {
+                        // Update the booking fields with AI results
+                        bookingViewModel.length = result.length.toString()
+                        bookingViewModel.width = result.width.toString()
+                        bookingViewModel.fabricType = result.fabricType
+                        
+                        analysisMessage = "✅ Detected: ${result.fabricType} carpet (${result.confidence.toInt()}% confidence)"
+                        
+                        // Auto-calculate price
+                        kotlinx.coroutines.delay(1000)
+                        bookingViewModel.calculatePrice()
+                        showCouponField = true
+                    } else {
+                        analysisMessage = "❌ Could not analyze image. Please enter manually."
+                    }
+                } catch (e: Exception) {
+                    analysisMessage = "❌ Analysis failed: ${e.message}"
+                    android.util.Log.e("BookingStart", "Image analysis failed", e)
+                } finally {
+                    isAnalyzingImage = false
+                    // Clear message after 5 seconds
+                    kotlinx.coroutines.delay(5000)
+                    analysisMessage = null
                 }
-            } catch (e: Exception) {
-                analysisMessage = "❌ Analysis failed: ${e.message}"
-            } finally {
-                isAnalyzingImage = false
-                // Clear message after 5 seconds
-                kotlinx.coroutines.delay(5000)
-                analysisMessage = null
             }
+        } else {
+            analysisMessage = "❌ AI analyzer not available"
         }
     }
 
