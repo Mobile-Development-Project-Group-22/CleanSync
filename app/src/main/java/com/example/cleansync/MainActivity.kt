@@ -1,6 +1,7 @@
 package com.example.cleansync
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +19,8 @@ import com.example.cleansync.ui.theme.ThemePreferenceManager
 import com.example.cleansync.ui.theme.CleanSyncTheme
 import com.example.cleansync.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
+
 
 // MainActivity
 class MainActivity : ComponentActivity() {
@@ -35,6 +38,15 @@ class MainActivity : ComponentActivity() {
                     .getThemeMode(this@MainActivity)
                     .collect { themeMode = it }
             }
+
+            FirebaseAuth.getInstance().signInAnonymously()
+                .addOnSuccessListener {
+                    Log.d("AUTH", "Signed in")
+                }
+                .addOnFailureListener {
+                    Log.e("AUTH", "Error signing in")
+                }
+
 
             CleanSyncTheme(themeMode = themeMode) {
 
