@@ -22,6 +22,8 @@ retrofit = "2.9.0"
 firebaseCrashlyticsBuildtools = "3.0.3"
 storage = "1.5.0"
 identityJvm = "202411.1"
+appcompat = "1.7.1"
+recyclerview = "1.4.0"
 
 [libraries]
 
@@ -61,6 +63,8 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 firebase-crashlytics-buildtools = { group = "com.google.firebase", name = "firebase-crashlytics-buildtools", version.ref = "firebaseCrashlyticsBuildtools" }
 androidx-storage = { group = "androidx.test.services", name = "storage", version.ref = "storage" }
 identity-jvm = { group = "com.android.identity", name = "identity-jvm", version.ref = "identityJvm" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
