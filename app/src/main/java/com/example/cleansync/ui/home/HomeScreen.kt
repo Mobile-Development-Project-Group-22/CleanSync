@@ -37,6 +37,10 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.example.cleansync.R
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import com.example.cleansync.ChatActivity
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +63,8 @@ fun HomeScreen(
     val loyaltyPoints by homeViewModel.loyaltyPoints.collectAsStateWithLifecycle()
     val userName = homeViewModel.currentUser?.displayName?.split(" ")?.firstOrNull() ?: "User"
     var isChatOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
 
     Box(Modifier.fillMaxSize()) {
         Scaffold(
@@ -104,7 +110,8 @@ fun HomeScreen(
                             Image(
                                 painter = painterResource(id = R.drawable.chatbot), // Replace with your image resource
                                 contentDescription = "Chat with Assistant",
-                                modifier = Modifier.size(45.dp) // Adjust size as needed
+                                modifier = Modifier.size(45
+                                    .dp) // Adjust size as needed
                             )
                         }
                     }
@@ -142,11 +149,20 @@ fun HomeScreen(
 
         // Show Chatbot Dialog when open
         if (isChatOpen) {
-            ChatbotDialog(onDismiss = { isChatOpen = false },
+            ChatbotDialog(
+                onDismiss = { isChatOpen = false },
                 onNavigateToBooking = onNavigateToBooking,
-                onNavigateToMyBookings = onNavigateToMyBookings
-                )
+                onNavigateToMyBookings = onNavigateToMyBookings,
+                onNavigateToAgentChat = {
+                    isChatOpen = false   // Close chatbot dialog first
+
+                    context.startActivity(
+                        Intent(context, ChatActivity::class.java)
+                    )
+                }
+            )
         }
+
     }
 }
 
