@@ -39,6 +39,8 @@
         android:theme="@style/Theme.CleanSync"
         tools:targetApi="31">
 
+        <activity android:name=".ChatActivity"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
