@@ -21,3 +21,8 @@ kotlin.code.style=official
 # resources declared in the library itself and none from the library's dependencies,
 # thereby reducing the size of the R class for that library
 android.nonTransitiveRClass=true
+
+# SendGrid API Key
+# Get your API key from: https://app.sendgrid.com/settings/api_keys
+# Copy this file to gradle.properties and add your key
+SENDGRID_API_KEY=YOUR_SENDGRID_API_KEY_HERE

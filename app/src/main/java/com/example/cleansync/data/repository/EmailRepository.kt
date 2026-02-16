@@ -33,7 +33,8 @@ class EmailRepository {
             Log.d("EmailRepository", "Attempting to send email...")
             Log.d("EmailRepository", "Recipient: ${emailRequest.personalizations}")
             
-            val response = emailService.sendEmail(emailRequest)
+            val apiKey = BuildConfig.SENDGRID_API_KEY
+            val response = emailService.sendEmail("Bearer $apiKey", emailRequest)
             
             Log.d("EmailRepository", "Response code: ${response.code()}")
             Log.d("EmailRepository", "Response message: ${response.message()}")
