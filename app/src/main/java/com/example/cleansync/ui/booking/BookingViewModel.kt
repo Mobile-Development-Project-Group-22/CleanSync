@@ -227,26 +227,113 @@ class BookingViewModel : ViewModel() {
     }
 
     fun sendBookingConfirmationEmail() {
-        val bookingDetails = """
-        Booking Details:
-        Name: $name
-        Address: $streetAddress, $postalCode $city
-        Date & Time: $formattedDateTime
-        Estimated Price: €$estimatedPrice
-        Pickup & Delivery Fee: €10.0
-        Total Price: €$totalPrice
-    """.trimIndent()
+        // Note: Email functionality requires a valid SendGrid API key
+        // Currently the API key may be expired/invalid
+        // Booking will still work even if email fails
+        
+        val htmlContent = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: #4CAF50; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px; border: 1px solid #ddd; }
+                    .detail-row { padding: 10px 0; border-bottom: 1px solid #eee; }
+                    .label { font-weight: bold; color: #555; }
+                    .value { color: #333; }
+                    .total { font-size: 18px; font-weight: bold; color: #4CAF50; margin-top: 20px; padding-top: 20px; border-top: 2px solid #4CAF50; }
+                    .footer { text-align: center; padding: 20px; color: #777; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🧼 CleanSync - Booking Confirmed!</h1>
+                    </div>
+                    <div class="content">
+                        <p>Dear <strong>$name</strong>,</p>
+                        <p>Thank you for choosing CleanSync! Your carpet cleaning booking has been confirmed.</p>
+                        
+                        <h3 style="color: #4CAF50; margin-top: 30px;">📋 Booking Details:</h3>
+                        
+                        <div class="detail-row">
+                            <span class="label">👤 Name:</span>
+                            <span class="value">$name</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">📧 Email:</span>
+                            <span class="value">$email</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">📞 Phone:</span>
+                            <span class="value">+358$phoneNumber</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">📍 Address:</span>
+                            <span class="value">$streetAddress, $postalCode $city</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">📅 Date & Time:</span>
+                            <span class="value">$formattedDateTime</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">📏 Carpet Size:</span>
+                            <span class="value">$length m × $width m</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">🧵 Fabric Type:</span>
+                            <span class="value">$fabricType</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">💰 Cleaning Price:</span>
+                            <span class="value">€$estimatedPrice</span>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="label">🚚 Pickup & Delivery:</span>
+                            <span class="value">€10.00</span>
+                        </div>
+                        
+                        <div class="total">
+                            💳 Total Amount: €$totalPrice
+                        </div>
+                        
+                        <p style="margin-top: 30px; padding: 15px; background: #e8f5e9; border-left: 4px solid #4CAF50;">
+                            <strong>What's Next?</strong><br>
+                            Our team will pick up your carpet at the scheduled time. We'll clean it professionally and deliver it back to you sparkling clean!
+                        </p>
+                    </div>
+                    <div class="footer">
+                        <p>Need help? Contact us at t3shse00@students.oamk.fi</p>
+                        <p>© 2026 CleanSync. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
 
         val emailRequest = EmailRequest(
             personalizations = listOf(
                 mapOf(
                     "to" to listOf(mapOf("email" to email)),
-                    "subject" to "Booking Confirmation"
+                    "subject" to "✅ CleanSync Booking Confirmed - $formattedDateTime"
                 )
             ),
-            from = mapOf("email" to "t3shro00@students.oamk.fi"),
+            from = mapOf(
+                "email" to "t3shse00@students.oamk.fi",
+                "name" to "CleanSync"
+            ),
             content = listOf(
-                mapOf("type" to "text/plain", "value" to "Thank you for your booking!\n\n$bookingDetails")
+                mapOf("type" to "text/html", "value" to htmlContent)
             )
         )
 
@@ -256,8 +343,10 @@ class BookingViewModel : ViewModel() {
             isSendingEmail = false
             if (result) {
                 emailSentSuccess = true
+                android.util.Log.d("BookingEmail", "Confirmation email sent successfully to $email")
             } else {
                 errorMessage = "Failed to send confirmation email."
+                android.util.Log.e("BookingEmail", "Failed to send confirmation email to $email")
             }
         }
     }
@@ -299,7 +388,12 @@ class BookingViewModel : ViewModel() {
                 documentRef.update("id", documentRef.id)
                     .addOnSuccessListener {
                         errorMessage = null
-                        sendBookingConfirmationEmail()
+                        // Send email confirmation (non-blocking - won't prevent booking success)
+                        try {
+                            sendBookingConfirmationEmail()
+                        } catch (e: Exception) {
+                            Log.e("BookingViewModel", "Failed to send email but booking saved", e)
+                        }
                         onSuccess()
                     }
                     .addOnFailureListener {
