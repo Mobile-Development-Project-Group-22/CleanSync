@@ -54,17 +54,23 @@ fun BookingStartScreen(
                     val result = carpetAnalyzer.analyzeCarpetImage(imageUri)
                     
                     if (result != null) {
-                        // Update the booking fields with AI results
-                        bookingViewModel.length = result.length.toString()
-                        bookingViewModel.width = result.width.toString()
-                        bookingViewModel.fabricType = result.fabricType
-                        
-                        analysisMessage = "✅ Detected: ${result.fabricType} carpet (${result.confidence.toInt()}% confidence)"
-                        
-                        // Auto-calculate price
-                        kotlinx.coroutines.delay(1000)
-                        bookingViewModel.calculatePrice()
-                        showCouponField = true
+                        // Check if it's actually a carpet
+                        if (!result.isCarpet) {
+                            // Not a carpet image
+                            analysisMessage = "❌ ${result.errorMessage ?: "This is not a carpet. Please take a clear picture of a carpet or rug."}"
+                        } else {
+                            // Valid carpet - update the booking fields with AI results
+                            bookingViewModel.length = result.length.toString()
+                            bookingViewModel.width = result.width.toString()
+                            bookingViewModel.fabricType = result.fabricType
+                            
+                            analysisMessage = "✅ Detected: ${result.fabricType} carpet (${result.confidence.toInt()}% confidence)"
+                            
+                            // Auto-calculate price
+                            kotlinx.coroutines.delay(1000)
+                            bookingViewModel.calculatePrice()
+                            showCouponField = true
+                        }
                     } else {
                         analysisMessage = "❌ Could not analyze image. Please enter manually."
                     }
