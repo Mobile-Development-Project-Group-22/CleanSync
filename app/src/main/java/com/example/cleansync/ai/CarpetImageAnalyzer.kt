@@ -18,7 +18,9 @@ data class CarpetAnalysisResult(
     val length: Float,
     val width: Float,
     val fabricType: String,
-    val confidence: Float
+    val confidence: Float,
+    val isCarpet: Boolean = true,
+    val errorMessage: String? = null
 )
 
 class CarpetImageAnalyzer(private val context: Context) {
@@ -127,16 +129,39 @@ class CarpetImageAnalyzer(private val context: Context) {
                 
                 // Create the prompt for Gemini
                 val prompt = """
-                    Analyze this carpet/rug image and provide:
-                    1. Estimated length in meters (realistic estimate based on typical carpet sizes)
-                    2. Estimated width in meters (realistic estimate based on typical carpet sizes)
-                    3. Fabric type from these options: Wool, Cotton, Silk, Polyester, Nylon, Jute, Sisal, Shag, Persian/Oriental
+                    You are a strict carpet detection system. Your job is to REJECT images that are NOT carpets.
                     
-                    Respond ONLY with a valid JSON object in this exact format (no markdown, no extra text):
-                    {"length": 2.5, "width": 1.8, "fabricType": "Wool", "confidence": 85}
+                    STEP 1 - STRICT VALIDATION:
+                    Answer this question: "Is this a carpet, rug, or floor mat laying on the ground?"
                     
-                    Use your best judgment for dimensions. If you cannot clearly see the carpet, provide reasonable estimates.
-                    Confidence should be 60-95 based on image clarity.
+                    REJECT (isCarpet: false) if you see:
+                    - Walls, ceilings, or sky
+                    - Furniture (chairs, tables, beds, sofas)
+                    - People, animals, or body parts
+                    - Clothing, blankets, or towels
+                    - Kitchen items, electronics, or random objects
+                    - Blurry or unclear images
+                    - Images where no floor covering is visible
+                    - Curtains, drapes, or hanging fabrics
+                    - Paper, books, or documents
+                    
+                    ACCEPT (isCarpet: true) ONLY if:
+                    - You can clearly see a carpet/rug/mat ON THE FLOOR
+                    - The carpet texture is visible (woven, textile, fibers)
+                    - The image is clear and focused
+                    - It's definitely a floor covering, not something else
+                    
+                    STEP 2 - RESPONSE FORMAT:
+                    
+                    If NOT a carpet (be strict!):
+                    {"isCarpet": false, "errorMessage": "Not a carpet. Please photograph a carpet or rug on the floor."}
+                    
+                    If IS a carpet (only if you're absolutely sure):
+                    {"isCarpet": true, "length": 2.5, "width": 1.8, "fabricType": "Wool", "confidence": 85}
+                    
+                    IMPORTANT: When in doubt, respond with isCarpet: false. Better to reject non-carpets than accept them.
+                    
+                    Respond ONLY with JSON (no markdown, no extra text). Be very strict!
                 """.trimIndent()
                 
                 // Build JSON request
@@ -215,11 +240,65 @@ class CarpetImageAnalyzer(private val context: Context) {
                     
                     val resultJson = JSONObject(jsonText)
                     
+                    // Check if it's actually a carpet
+                    val isCarpet = resultJson.optBoolean("isCarpet", true)
+                    
+                    if (!isCarpet) {
+                        // Not a carpet - return error result
+                        val errorMessage = resultJson.optString(
+                            "errorMessage",
+                            "This does not appear to be a carpet. Please take a clear picture of a carpet or rug."
+                        )
+                        android.util.Log.w("CarpetAnalyzer", "Not a carpet: $errorMessage")
+                        return CarpetAnalysisResult(
+                            length = 0f,
+                            width = 0f,
+                            fabricType = "",
+                            confidence = 0f,
+                            isCarpet = false,
+                            errorMessage = errorMessage
+                        )
+                    }
+                    
+                    // Valid carpet - parse the data
+                    val length = resultJson.getDouble("length").toFloat()
+                    val width = resultJson.getDouble("width").toFloat()
+                    val confidence = resultJson.getDouble("confidence").toFloat()
+                    val fabricType = resultJson.getString("fabricType")
+                    
+                    // Additional validation: Check if dimensions are realistic
+                    if (length <= 0 || width <= 0 || length > 10 || width > 10) {
+                        android.util.Log.w("CarpetAnalyzer", "Unrealistic dimensions: ${length}x${width}")
+                        return CarpetAnalysisResult(
+                            length = 0f,
+                            width = 0f,
+                            fabricType = "",
+                            confidence = 0f,
+                            isCarpet = false,
+                            errorMessage = "Could not detect valid carpet dimensions. Please take a clearer photo."
+                        )
+                    }
+                    
+                    // Additional validation: Very low confidence suggests it's not a carpet
+                    if (confidence < 50) {
+                        android.util.Log.w("CarpetAnalyzer", "Low confidence: $confidence")
+                        return CarpetAnalysisResult(
+                            length = 0f,
+                            width = 0f,
+                            fabricType = "",
+                            confidence = 0f,
+                            isCarpet = false,
+                            errorMessage = "Image unclear or not a carpet. Please take a clear photo of a carpet."
+                        )
+                    }
+                    
                     val result = CarpetAnalysisResult(
-                        length = resultJson.getDouble("length").toFloat(),
-                        width = resultJson.getDouble("width").toFloat(),
-                        fabricType = resultJson.getString("fabricType"),
-                        confidence = resultJson.getDouble("confidence").toFloat()
+                        length = length,
+                        width = width,
+                        fabricType = fabricType,
+                        confidence = confidence,
+                        isCarpet = true,
+                        errorMessage = null
                     )
                     
                     android.util.Log.d("CarpetAnalyzer", "Parsed result: $result")
