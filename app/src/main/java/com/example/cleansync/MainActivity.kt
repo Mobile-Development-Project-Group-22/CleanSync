@@ -2,6 +2,7 @@ package com.example.cleansync
 
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import android.view.animation.DecelerateInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,6 +16,8 @@ import com.example.cleansync.ui.theme.CleanSyncTheme
 import com.example.cleansync.ui.theme.ThemeMode
 import com.example.cleansync.ui.theme.ThemePreferenceManager
 import kotlinx.coroutines.launch
+import com.google.firebase.auth.FirebaseAuth
+
 
 class MainActivity : ComponentActivity() {
 
@@ -70,6 +73,15 @@ class MainActivity : ComponentActivity() {
                     isThemeLoaded = true
                 }
             }
+
+            FirebaseAuth.getInstance().signInAnonymously()
+                .addOnSuccessListener {
+                    Log.d("AUTH", "Signed in")
+                }
+                .addOnFailureListener {
+                    Log.e("AUTH", "Error signing in")
+                }
+
 
             CleanSyncTheme(themeMode = themeMode) {
                 CleanSyncApp(

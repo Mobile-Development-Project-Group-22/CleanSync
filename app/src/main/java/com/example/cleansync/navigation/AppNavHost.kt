@@ -104,6 +104,18 @@ fun AppNavHost(
             })
         }
 
+        composable(Screen.BookingStartScreen.route) {
+            BookingStartScreen(
+                bookingViewModel = bookingViewModel,
+                onBookingConfirmed = {
+                    navController.navigate(Screen.BookingFormScreen.route)
+                },
+                onBookingCancelled = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
         composable(Screen.BookingConfirmationScreen.route) {
             BookingConfirmationScreen(bookingViewModel = bookingViewModel, onReturnHome = {
                 navController.navigate(Screen.HomeScreen.route) {
