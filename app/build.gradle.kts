@@ -21,6 +21,11 @@ android {
             "\"${project.findProperty("SENDGRID_API_KEY")}\""
 
         )
+        buildConfigField(
+            "String",
+            "GEMINI_API_KEY",
+            "\"${project.findProperty("GEMINI_API_KEY")}\""
+        )
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
