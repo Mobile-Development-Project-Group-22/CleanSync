@@ -30,3 +30,4 @@ SENDGRID_API_KEY=YOUR_SENDGRID_API_KEY_HERE
 # Gemini API Key
 # Get your API key from: https://aistudio.google.com/app/apikey
 GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
+
