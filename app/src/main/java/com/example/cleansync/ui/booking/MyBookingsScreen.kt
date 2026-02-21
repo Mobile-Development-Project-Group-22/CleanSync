@@ -3,6 +3,9 @@ package com.example.cleansync.ui.booking
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
@@ -29,6 +32,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun MyBookingsScreen(
     viewModel: BookingViewModel,
+    scrollToBookingId: String? = null,
     onBookingClick: () -> Unit,
 ) {
     val db = FirebaseFirestore.getInstance()
@@ -37,6 +41,8 @@ fun MyBookingsScreen(
 
     var bookings by remember { mutableStateOf(emptyList<Booking>()) }
     var loading by remember { mutableStateOf(true) }
+    
+    val listState = rememberLazyListState()
     
     var fromDate by remember { mutableStateOf<LocalDate?>(null) }
     var toDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -76,7 +82,7 @@ fun MyBookingsScreen(
             }
         }
     }
-
+    
     // Filter bookings
     val filteredBookings = remember(bookings, fromDate, toDate) {
         bookings.filter { booking ->
@@ -92,6 +98,27 @@ fun MyBookingsScreen(
                 afterFrom && beforeTo
             } catch (e: Exception) {
                 false
+            }
+        }.sortedBy { booking ->
+            // Sort by date and time, earliest first
+            try {
+                LocalDateTime.parse(
+                    booking.bookingDateTime,
+                    DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
+                )
+            } catch (e: Exception) {
+                LocalDateTime.MAX // Put invalid dates at the end
+            }
+        }
+    }
+    
+    // Scroll to specific booking if bookingId is provided
+    LaunchedEffect(scrollToBookingId, filteredBookings) {
+        if (!scrollToBookingId.isNullOrEmpty() && scrollToBookingId != "null" && filteredBookings.isNotEmpty()) {
+            val index = filteredBookings.indexOfFirst { it.id == scrollToBookingId }
+            if (index >= 0) {
+                listState.animateScrollToItem(index)
+                expandedCardId = scrollToBookingId
             }
         }
     }
@@ -238,11 +265,11 @@ fun MyBookingsScreen(
                         }
                     } else {
                         LazyColumn(
+                            state = listState,
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(filteredBookings.size) { index ->
-                                val booking = filteredBookings[index]
+                            itemsIndexed(filteredBookings) { index, booking ->
                                 BookingCard(
                                     booking = booking,
                                     isExpanded = booking.id == expandedCardId,

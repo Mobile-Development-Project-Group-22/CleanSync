@@ -13,7 +13,13 @@ sealed class Screen(val route: String) {
     object BookingConfirmationScreen : Screen("booking_confirmation_screen")
     object NotificationScreen : Screen("notification_screen")
     object VerificationScreen : Screen("verification_screen")
-    object MyBookingsScreen : Screen("my_bookings_screen")
+    object MyBookingsScreen : Screen("my_bookings_screen/{bookingId}") {
+        fun createRoute(bookingId: String? = null) = if (bookingId != null) {
+            "my_bookings_screen/$bookingId"
+        } else {
+            "my_bookings_screen/null"
+        }
+    }
     object BookingDetailsScreen : Screen("booking_details_screen")
     object SettingScreen : Screen("setting_screen")
     object SupportScreen : Screen("support_screen")

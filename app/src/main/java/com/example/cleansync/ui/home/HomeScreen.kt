@@ -9,10 +9,12 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
@@ -52,7 +54,7 @@ fun HomeScreen(
     onNavigateToNotifications: () -> Unit,
     onNavigateToProfile: () -> Unit,
 
-    onNavigateToMyBookings: () -> Unit,
+    onNavigateToMyBookings: (String?) -> Unit,
     onLogout: () -> Unit
 
 ) {
@@ -121,7 +123,7 @@ fun HomeScreen(
                 SwipeRefresh(
                     state = rememberSwipeRefreshState(isRefreshing),
                     onRefresh = { homeViewModel.refreshBookings() },
-                    modifier = Modifier.padding(paddingValues),
+                    modifier = Modifier.fillMaxSize(),
                     indicator = { state, trigger ->
                         SwipeRefreshIndicator(
                             state = state,
@@ -137,10 +139,12 @@ fun HomeScreen(
                         completedBookings = completedBookings,
                         userName = userName,
                         onBookingClick = onNavigateToBooking,
+                        onBookingCardClick = onNavigateToMyBookings,
                         onLogoutClick = {
                             homeViewModel.signOut()
                             onLogout()
-                        }
+                        },
+                        contentPadding = paddingValues
                     )
                 }
             }
@@ -152,7 +156,7 @@ fun HomeScreen(
             ChatbotDialog(
                 onDismiss = { isChatOpen = false },
                 onNavigateToBooking = onNavigateToBooking,
-                onNavigateToMyBookings = onNavigateToMyBookings,
+                onNavigateToMyBookings = { onNavigateToMyBookings(null) },
                 onNavigateToAgentChat = {
                     isChatOpen = false   // Close chatbot dialog first
 
@@ -273,7 +277,9 @@ fun HomeContent(
     completedBookings: Int,
     userName: String,
     onBookingClick: () -> Unit,
-    onLogoutClick: () -> Unit
+    onBookingCardClick: (String?) -> Unit,
+    onLogoutClick: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
     val bookingsByDate = bookings.groupBy {
         LocalDateTime.parse(it.bookingDateTime, DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")).toLocalDate()
@@ -286,11 +292,12 @@ fun HomeContent(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(
+            top = contentPadding.calculateTopPadding() + 16.dp,
+            bottom = contentPadding.calculateBottomPadding() + 16.dp
+        )
     ) {
-        stickyHeader {
-            Spacer(Modifier.height(16.dp))
-        }
         item {
             UserGreetingCard(userName = userName, bookings = bookings, completedBookings = completedBookings)
         }
@@ -311,8 +318,22 @@ fun HomeContent(
                 EmptyBookingCard(onBookingClick)
             }
         } else {
-            items(bookings.sortedBy { it.timestamp }) { booking ->
-                BookingCard(booking = booking)
+            items(
+                bookings.sortedBy { booking ->
+                    try {
+                        LocalDateTime.parse(
+                            booking.bookingDateTime,
+                            DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
+                        )
+                    } catch (e: Exception) {
+                        LocalDateTime.MAX
+                    }
+                }
+            ) { booking ->
+                BookingCard(
+                    booking = booking,
+                    onClick = { onBookingCardClick(booking.id) }
+                )
             }
         }
 
@@ -362,18 +383,76 @@ private fun StatItem(value: Int, label: String, icon: ImageVector) {
 }
 
 @Composable
-fun BookingCard(booking: Booking, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier = modifier.fillMaxWidth()) {
+fun BookingCard(booking: Booking, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 2.dp
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(booking.name, fontWeight = FontWeight.Bold)
-                Text(booking.bookingDateTime, style = MaterialTheme.typography.bodyMedium)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Customer Name
+                Text(
+                    text = booking.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                
+                // Date and Time
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Event,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = booking.bookingDateTime,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Details")
+            
+            // Arrow in circular background
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "View Details",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }

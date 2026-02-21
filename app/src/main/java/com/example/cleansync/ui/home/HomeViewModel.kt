@@ -102,6 +102,17 @@ class HomeViewModel(
                     } catch (e: Exception) {
                         null
                     }
+                }.filter { booking ->
+                    // Only show upcoming bookings (future bookings)
+                    try {
+                        val bookingDateTime = LocalDateTime.parse(
+                            booking.bookingDateTime,
+                            DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
+                        )
+                        bookingDateTime.isAfter(LocalDateTime.now())
+                    } catch (e: Exception) {
+                        false
+                    }
                 }
                 _bookings.value = bookingList
             } catch (e: Exception) {

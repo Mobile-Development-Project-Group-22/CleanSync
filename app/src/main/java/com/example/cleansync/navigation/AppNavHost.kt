@@ -83,7 +83,9 @@ fun AppNavHost(
                 onNavigateToBooking = { navController.navigate(Screen.BookingStartScreen.route) },
                 onNavigateToNotifications = { navController.navigate(Screen.NotificationScreen.route) },
                 onNavigateToProfile = { navController.navigate(Screen.ProfileScreen.route) },
-                onNavigateToMyBookings = { navController.navigate(Screen.MyBookingsScreen.route) },
+                onNavigateToMyBookings = { bookingId ->
+                    navController.navigate(Screen.MyBookingsScreen.createRoute(bookingId))
+                },
                 onLogout = {
                     navController.navigate(Screen.LoginScreen.route) {
                         popUpTo(Screen.HomeScreen.route) { inclusive = true }
@@ -98,10 +100,15 @@ fun AppNavHost(
         }
 
         // --- Bookings ---
-        composable(Screen.MyBookingsScreen.route) {
-            MyBookingsScreen(viewModel = bookingViewModel, onBookingClick = {
-                navController.navigate(Screen.BookingStartScreen.route)
-            })
+        composable(Screen.MyBookingsScreen.route) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId")
+            MyBookingsScreen(
+                viewModel = bookingViewModel,
+                scrollToBookingId = if (bookingId != "null") bookingId else null,
+                onBookingClick = {
+                    navController.navigate(Screen.BookingStartScreen.route)
+                }
+            )
         }
 
         composable(Screen.BookingStartScreen.route) {
@@ -152,7 +159,7 @@ fun AppNavHost(
                     }
                 },
                 onNavigateToBookings = {
-                    navController.navigate(Screen.MyBookingsScreen.route) {
+                    navController.navigate(Screen.MyBookingsScreen.createRoute(null)) {
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 },

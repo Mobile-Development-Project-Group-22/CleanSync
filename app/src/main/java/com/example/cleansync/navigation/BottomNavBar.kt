@@ -28,14 +28,17 @@ import com.example.cleansync.ui.notifications.NotificationViewModel
 @Composable
 fun BottomNavBar(navController: NavController, unreadCount: Int) {
     val items = listOf(
-        NavigationItem("Home", Icons.Default.Home, "home_screen"),
-        NavigationItem("My Bookings", Icons.Default.CalendarToday, "my_bookings_screen"),
-        NavigationItem("Notifications", Icons.Default.Notifications, "notification_screen"),
-        NavigationItem("Profile", Icons.Default.Person, "profile_screen")
+        NavigationItem("Home", Icons.Default.Home, Screen.HomeScreen.route),
+        NavigationItem("My Bookings", Icons.Default.CalendarToday, Screen.MyBookingsScreen.createRoute(null)),
+        NavigationItem("Notifications", Icons.Default.Notifications, Screen.NotificationScreen.route),
+        NavigationItem("Profile", Icons.Default.Person, Screen.ProfileScreen.route)
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    
+    // Normalize route for comparison (handle parameterized routes)
+    val normalizedCurrentRoute = currentRoute?.substringBefore("/")
 
     val notificationViewModel: NotificationViewModel = remember { NotificationViewModel() }
     var unreadCount = notificationViewModel.unreadNotificationsCount()
@@ -45,7 +48,8 @@ fun BottomNavBar(navController: NavController, unreadCount: Int) {
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         items.forEach { item ->
-            val isSelected = currentRoute == item.route
+            val itemRouteBase = item.route.substringBefore("/")
+            val isSelected = normalizedCurrentRoute == itemRouteBase
 
             NavigationBarItem(
                 icon = {
