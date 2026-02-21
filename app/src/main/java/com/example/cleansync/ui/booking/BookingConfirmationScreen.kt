@@ -23,9 +23,11 @@ fun BookingConfirmationScreen(
     onReturnHome: () -> Unit
 ) {
     val context = LocalContext.current
-    val selectedDateTime = bookingViewModel.selectedDateTime
-    val estimatedPrice = bookingViewModel.estimatedPrice
-    val totalPrice = bookingViewModel.totalPrice
+    
+    // Capture values immediately and remember them so they don't change during navigation
+    val selectedDateTime = remember { bookingViewModel.selectedDateTime }
+    val totalPrice = remember { bookingViewModel.totalPrice }
+    
     val formattedDateTime = remember(selectedDateTime) {
         selectedDateTime?.format(DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
     }
@@ -91,8 +93,8 @@ fun BookingConfirmationScreen(
 
         Button(
             onClick = {
-                bookingViewModel.resetBooking()
                 onReturnHome()
+                bookingViewModel.resetBooking()
             },
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
