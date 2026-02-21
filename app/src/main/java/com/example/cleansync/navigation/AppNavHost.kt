@@ -134,8 +134,9 @@ fun AppNavHost(
 
         // --- Profile & Settings ---
         composable(Screen.ProfileScreen.route) {
+            val profileViewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
             ProfileScreen(
-                profileViewModel = ProfileViewModel(),
+                profileViewModel = profileViewModel,
                 preferencesViewModel = NotificationSettingsViewModel(),
                 currentThemeMode = currentThemeMode,
                 onThemeSelected = onThemeSelected,
@@ -155,6 +156,9 @@ fun AppNavHost(
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
                     }
                 },
+                onNavigateToPastBookings = {
+                    navController.navigate(Screen.PastBookingsScreen.route)
+                },
                 onNavigateToSettings = {
                     navController.navigate(Screen.SettingScreen.route) {
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
@@ -168,6 +172,20 @@ fun AppNavHost(
                 onNavigateToContact = {
                     navController.navigate(Screen.ContactUs.route) {
                         popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.PastBookingsScreen.route) {
+            val profileViewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            PastBookingsScreen(
+                profileViewModel = profileViewModel,
+                bookingViewModel = bookingViewModel,
+                onBackClick = { navController.popBackStack() },
+                onNavigateToConfirmation = {
+                    navController.navigate(Screen.BookingConfirmationScreen.route) {
+                        popUpTo(Screen.PastBookingsScreen.route) { inclusive = true }
                     }
                 }
             )

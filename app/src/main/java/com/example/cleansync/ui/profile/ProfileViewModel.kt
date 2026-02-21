@@ -7,11 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cleansync.data.repository.ProfileManager
+import com.example.cleansync.model.Booking
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,9 +31,13 @@ class ProfileViewModel(
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
+    private val firestore = FirebaseFirestore.getInstance()
 
     private val _profileState = MutableStateFlow<ProfileState>(ProfileState.Idle)
     val profileState: StateFlow<ProfileState> get() = _profileState
+
+    private val _pastBookings = MutableStateFlow<List<Booking>>(emptyList())
+    val pastBookings: StateFlow<List<Booking>> get() = _pastBookings
 
     val currentUser = profileManager.currentUser
 
@@ -247,6 +254,50 @@ class ProfileViewModel(
             }
         } else {
             onFailure("No user is currently signed in.")
+        }
+    }
+
+    fun fetchPastBookings() {
+        viewModelScope.launch {
+            try {
+                val userId = currentUser?.uid ?: return@launch
+                
+                Log.d("ProfileViewModel", "Fetching past bookings for user: $userId")
+                
+                firestore.collection("bookings")
+                    .whereEqualTo("userId", userId)
+                    .get()
+                    .addOnSuccessListener { documents ->
+                        Log.d("ProfileViewModel", "Total bookings found: ${documents.size()}")
+                        
+                        val bookings = documents.mapNotNull { document ->
+                            try {
+                                val booking = document.toObject(Booking::class.java).copy(id = document.id)
+                                Log.d("ProfileViewModel", "Booking ${booking.id}: progressStage = ${booking.progressStage}")
+                                
+                                // Only include returned bookings
+                                if (booking.progressStage == "returned") {
+                                    booking
+                                } else {
+                                    null
+                                }
+                            } catch (e: Exception) {
+                                Log.e("ProfileViewModel", "Error parsing booking", e)
+                                null
+                            }
+                        }.sortedByDescending { it.timestamp }
+                        
+                        Log.d("ProfileViewModel", "Past bookings (returned): ${bookings.size}")
+                        _pastBookings.value = bookings
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("ProfileViewModel", "Error fetching past bookings", e)
+                        _pastBookings.value = emptyList()
+                    }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error in fetchPastBookings", e)
+                _pastBookings.value = emptyList()
+            }
         }
     }
 

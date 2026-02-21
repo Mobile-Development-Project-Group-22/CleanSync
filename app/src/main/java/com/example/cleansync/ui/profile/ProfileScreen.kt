@@ -35,6 +35,7 @@ fun ProfileScreen(
     currentThemeMode: ThemeMode,
     onThemeSelected: (ThemeMode) -> Unit,
     onNavigateToBookings: () -> Unit,
+    onNavigateToPastBookings: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToSupport: () -> Unit,
     onNavigateToContact: () -> Unit,
@@ -70,6 +71,7 @@ fun ProfileScreen(
 
     val items = listOf(
         "My Bookings" to onNavigateToBookings,
+        "Past Bookings" to onNavigateToPastBookings,
         "Payment Methods" to {},
         "Contact Us" to onNavigateToContact,
         "Review Us" to { showReviewDialog = true },
