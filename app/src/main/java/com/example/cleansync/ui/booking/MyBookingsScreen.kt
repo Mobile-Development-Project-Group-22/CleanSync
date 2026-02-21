@@ -87,15 +87,19 @@ fun MyBookingsScreen(
     val filteredBookings = remember(bookings, fromDate, toDate) {
         bookings.filter { booking ->
             try {
-                val bookingDate = LocalDateTime.parse(
+                val bookingDateTime = LocalDateTime.parse(
                     booking.bookingDateTime,
                     DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm")
-                ).toLocalDate()
+                )
+                val bookingDate = bookingDateTime.toLocalDate()
+                
+                // Only show upcoming bookings (future bookings)
+                val isFutureBooking = bookingDateTime.isAfter(LocalDateTime.now())
                 
                 val afterFrom = fromDate?.let { bookingDate >= it } ?: true
                 val beforeTo = toDate?.let { bookingDate <= it } ?: true
                 
-                afterFrom && beforeTo
+                isFutureBooking && afterFrom && beforeTo
             } catch (e: Exception) {
                 false
             }
@@ -142,9 +146,7 @@ fun MyBookingsScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
-
-
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             when {
                 loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 bookings.isEmpty() ->  EmptyBookingCard(onBookingClick)
@@ -153,6 +155,7 @@ fun MyBookingsScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(top = padding.calculateTopPadding())
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -266,7 +269,12 @@ fun MyBookingsScreen(
                     } else {
                         LazyColumn(
                             state = listState,
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                            contentPadding = PaddingValues(
+                                top = 12.dp,
+                                bottom = padding.calculateBottomPadding() + 12.dp,
+                                start = 16.dp,
+                                end = 16.dp
+                            ),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             itemsIndexed(filteredBookings) { index, booking ->

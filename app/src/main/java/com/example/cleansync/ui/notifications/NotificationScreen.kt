@@ -78,7 +78,7 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing),
             onRefresh = { isRefreshing = true },
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.fillMaxSize()
         ) {
             when {
                 errorMessage != null -> {
@@ -135,9 +135,13 @@ fun NotificationScreen(viewModel: NotificationViewModel = viewModel()) {
                 else -> {
                     val grouped = groupNotifications(notifications)
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = padding.calculateTopPadding() + 8.dp,
+                            bottom = padding.calculateBottomPadding() + 8.dp,
+                            start = 12.dp,
+                            end = 12.dp
+                        )
                     ) {
                         grouped.forEach { (label, items) ->
                             item {

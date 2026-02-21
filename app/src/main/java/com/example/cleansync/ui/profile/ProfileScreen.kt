@@ -133,7 +133,7 @@ fun ProfileScreen(
             )
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Box(modifier = Modifier.fillMaxSize()) {
             if (profileState is ProfileState.Loading) {
                 Box(
                     modifier = Modifier
@@ -148,9 +148,11 @@ fun ProfileScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(innerPadding)
+                        .padding(horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Spacer(modifier = Modifier.height(16.dp))
                     ProfilePictureSection(profileViewModel, currentUser)
                     Spacer(modifier = Modifier.height(16.dp))
 

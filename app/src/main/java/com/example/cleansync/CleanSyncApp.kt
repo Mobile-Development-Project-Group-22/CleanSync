@@ -56,8 +56,9 @@ fun MainScreen(
         Screen.NotificationScreen.route,
         Screen.ProfileScreen.route,
         Screen.BookingStartScreen.route,
-        Screen.BookingFormScreen.route
-    )
+        Screen.BookingFormScreen.route,
+        Screen.PastBookingsScreen.route
+    ) || currentRoute?.startsWith("my_bookings_screen") == true
 
     Scaffold(
         bottomBar = {
