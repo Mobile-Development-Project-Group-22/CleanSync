@@ -64,12 +64,10 @@ fun SignupScreen(
     // Handle authentication state
     LaunchedEffect(authState) {
         when (authState) {
-            is AuthState.SignupSuccess -> {
+            is AuthState.Idle -> {
+                // Signup success, navigate to the next screen
                 isSignupEnabled = true
-                showVerificationDialog = true
-//                navigate to login screen
                 onSignupSuccess()
-
             }
             is AuthState.Error -> {
                 isSignupEnabled = true
