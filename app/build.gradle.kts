@@ -139,6 +139,7 @@ dependencies {
     implementation("com.google.guava:guava:31.0.1-android")
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.recyclerview)
+    implementation(libs.androidx.core.splashscreen)
 
     // Testing
     testImplementation(libs.junit)

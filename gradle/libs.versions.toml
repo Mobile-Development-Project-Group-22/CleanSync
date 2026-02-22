@@ -24,6 +24,7 @@ storage = "1.5.0"
 identityJvm = "202411.1"
 appcompat = "1.7.1"
 recyclerview = "1.4.0"
+coreSplashscreen = "1.2.0"
 
 [libraries]
 
@@ -65,6 +66,7 @@ androidx-storage = { group = "androidx.test.services", name = "storage", version
 identity-jvm = { group = "com.android.identity", name = "identity-jvm", version.ref = "identityJvm" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "coreSplashscreen" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
