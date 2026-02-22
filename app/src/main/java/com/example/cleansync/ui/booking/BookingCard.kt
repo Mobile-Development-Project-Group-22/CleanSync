@@ -18,11 +18,8 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.example.cleansync.model.Booking
 import com.example.cleansync.utils.NotificationScheduler
-import com.firebase.ui.auth.BuildConfig
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-
-import java.util.*
 
 @Composable
 fun BookingCard(
@@ -34,8 +31,8 @@ fun BookingCard(
     onShowExplanation: () -> Unit
 ) {
     var showDebugDialog by remember { mutableStateOf(false) }
-    
-    // Check if booking is in the past
+
+    // Determine if booking is in the past
     val isPastBooking = remember(booking.bookingDateTime) {
         try {
             val bookingDate = LocalDateTime.parse(
@@ -60,6 +57,7 @@ fun BookingCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 6.dp)
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
+
             // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -99,9 +97,9 @@ fun BookingCard(
                     )
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             // Progress Bar
             BookingProgressBar(progressStage = booking.progressStage)
 
@@ -110,7 +108,7 @@ fun BookingCard(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Details in a clean grid
+                // Booking Details
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     InfoRow(icon = "👤", label = "Name", value = booking.name)
                     InfoRow(icon = "📧", label = "Email", value = booking.email)
@@ -122,47 +120,14 @@ fun BookingCard(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Action Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    FilledTonalButton(
-                        onClick = onEdit,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Edit")
-                    }
-
-                    Button(
-                        onClick = onCancel,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    ) {
-                        Icon(
-                            Icons.Default.Cancel,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Cancel")
-                    }
-
-                    if (BuildConfig.DEBUG) {
-                        IconButton(onClick = { showDebugDialog = true }) {
-                            Text("🔧", style = MaterialTheme.typography.titleMedium)
-                        }
-                    }
-                }
+                // Action Buttons Row
+                BookingActionRow(
+                    booking = booking,
+                    onEdit = onEdit,
+                    onCancel = onCancel,
+                    showDebug = true,
+                    onDebugClick = { showDebugDialog = true }
+                )
             }
         }
     }
@@ -197,6 +162,7 @@ fun InfoRow(icon: String, label: String, value: String) {
         }
     }
 }
+
 @Composable
 fun BookingProgressBar(progressStage: String) {
     val stages = listOf("Booked", "Collected", "Cleaned", "Returned")
@@ -216,10 +182,7 @@ fun BookingProgressBar(progressStage: String) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .background(
-                        color = circleColor,
-                        shape = CircleShape
-                    ),
+                    .background(color = circleColor, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -236,7 +199,7 @@ fun BookingProgressBar(progressStage: String) {
                         .height(3.dp)
                         .padding(horizontal = 4.dp)
                         .background(
-                            color = if (getProgressStageColor(progressStage, index + 1) == "completed") 
+                            color = if (getProgressStageColor(progressStage, index + 1) == "completed")
                                 primaryColor else Color.Gray.copy(alpha = 0.3f),
                             shape = MaterialTheme.shapes.small
                         )
@@ -246,18 +209,96 @@ fun BookingProgressBar(progressStage: String) {
     }
 }
 
-
 private fun getProgressStageColor(progressStage: String, index: Int): String {
     return when (index) {
-        0 -> if (progressStage == "booked" || progressStage == "collected" || progressStage == "cleaned" || progressStage == "returned") "completed" else "incomplete"
-        1 -> if (progressStage == "collected" || progressStage == "cleaned" || progressStage == "returned") "completed" else "incomplete"
-        2 -> if (progressStage == "cleaned" || progressStage == "returned") "completed" else "incomplete"
+        0 -> if (progressStage in listOf("booked", "collected", "cleaned", "returned")) "completed" else "incomplete"
+        1 -> if (progressStage in listOf("collected", "cleaned", "returned")) "completed" else "incomplete"
+        2 -> if (progressStage in listOf("cleaned", "returned")) "completed" else "incomplete"
         3 -> if (progressStage == "returned") "completed" else "incomplete"
         else -> "incomplete"
     }
 }
 
+@Composable
+fun BookingActionRow(
+    booking: Booking,
+    onEdit: () -> Unit,
+    onCancel: () -> Unit,
+    showDebug: Boolean = false,
+    onDebugClick: (() -> Unit)? = null
+) {
+    val context = LocalContext.current
 
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Edit Button
+            FilledTonalButton(
+                onClick = onEdit,
+                modifier = Modifier.weight(1f),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Edit Booking",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Edit")
+            }
+
+            // Cancel Button
+            Button(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                ),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Cancel,
+                    contentDescription = "Cancel Booking",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Cancel")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Add to Calendar Button (full width minus debug)
+            Button(
+                onClick = { booking.addToCalendarSafe(context) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                ),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("Add to Calendar")
+            }
+
+            // Optional Debug Button
+            if (showDebug && onDebugClick != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = onDebugClick) {
+                    Text("🔧", style = MaterialTheme.typography.titleMedium)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun NotificationDebugDialog(onDismiss: () -> Unit) {
@@ -265,23 +306,15 @@ fun NotificationDebugDialog(onDismiss: () -> Unit) {
     var workInfos by remember { mutableStateOf<List<WorkInfo>>(emptyList()) }
     var filterDate by remember { mutableStateOf("") }
 
-    // Fetch workInfo from WorkManager when the dialog opens
     LaunchedEffect(Unit) {
         workInfos = WorkManager.getInstance(context)
             .getWorkInfosByTag("booking_reminder")
-            .get()  // Use get() to block and return results (for debug)
+            .get()
     }
 
-    // Filter by booking date when user updates filter
     val filteredWorkInfos = if (filterDate.isNotEmpty()) {
-        workInfos.filter { workInfo ->
-            // Check if the booking time matches the filter (we assume it's a string)
-            val workInfoDate = workInfo.tags.find { it.contains(filterDate) }
-            workInfoDate != null
-        }
-    } else {
-        workInfos
-    }
+        workInfos.filter { info -> info.tags.any { it.contains(filterDate) } }
+    } else workInfos
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -291,7 +324,6 @@ fun NotificationDebugDialog(onDismiss: () -> Unit) {
         title = { Text("🔧 Scheduled Notifications") },
         text = {
             Column {
-                // Filter UI
                 TextField(
                     value = filterDate,
                     onValueChange = { filterDate = it },
@@ -308,43 +340,26 @@ fun NotificationDebugDialog(onDismiss: () -> Unit) {
                             Text("State: ${info.state.name}")
                             Text("Run Attempts: ${info.runAttemptCount}")
 
-                            // Cancel button
                             OutlinedButton(
-                                onClick = {
-                                    // Cancel the scheduled notification
-                                    WorkManager.getInstance(context)
-                                        .cancelWorkById(info.id)
-                                },
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text("Cancel")
-                            }
+                                onClick = { WorkManager.getInstance(context).cancelWorkById(info.id) },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) { Text("Cancel") }
 
-                            // Reschedule button
                             OutlinedButton(
                                 onClick = {
-                                    // Reschedule with updated delay (example: 10 seconds)
-                                    val newDelayMillis = 10 * 1000L // 10 seconds delay for testing
                                     NotificationScheduler.scheduleReminderNotification(
-                                        context = context,
-                                        delayMillis = newDelayMillis,
+                                        context,
+                                        delayMillis = 10_000L,
                                         title = "Rescheduled Reminder",
                                         message = "Your booking is rescheduled."
                                     )
                                 },
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                )
-                            ) {
-                                Text("Reschedule")
-                            }
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                            ) { Text("Reschedule") }
                         }
                     }
                 }
             }
         }
     )
-
 }
