@@ -16,9 +16,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val authManager: AuthManager = AuthManager(),
+    private val authManager: AuthManager = AuthManager()
 ) : ViewModel() {
 
+    /** Represents the current authentication state */
     sealed class AuthState {
         object Idle : AuthState()
         object Loading : AuthState()
@@ -28,40 +29,41 @@ class AuthViewModel(
         data class Error(val message: String, val type: ErrorType) : AuthState()
     }
 
+    /** Types of authentication errors */
     enum class ErrorType {
         SIGNUP, LOGIN, PASSWORD_RESET, GOOGLE_SIGNIN, GENERAL
     }
 
+    /** Returns true if the user is currently logged in */
     val isLoggedIn: Boolean
         get() = authManager.currentUser != null
 
+    /** Returns true if the current user's email is verified */
     val isEmailVerified: Boolean
         get() = authManager.currentUser?.isEmailVerified ?: false
 
+    /** Expose current user */
+    val currentUser: FirebaseUser? get() = authManager.currentUser
+
+    /** StateFlow for authentication state */
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    val currentUser: FirebaseUser? get() = authManager.currentUser
+    // ------------------ AUTH METHODS ------------------
 
+    /** Sign in using Google ID token */
     fun signInWithGoogle(idToken: String) {
-        // Set the state to Loading while waiting for the Google sign-in result
         _authState.value = AuthState.Loading
-
         viewModelScope.launch {
             try {
-                // Create the Google authentication credential
                 val credential: AuthCredential = GoogleAuthProvider.getCredential(idToken, null)
-
-                // Attempt to sign in with the credential
                 val result = authManager.signInWithCredential(credential)
 
                 result.fold(
                     onSuccess = { user ->
                         if (user.isEmailVerified) {
-                            // User is logged in, and email is verified
                             _authState.value = AuthState.LoginSuccess(user)
                         } else {
-                            // If the email is not verified, show an error message
                             _authState.value = AuthState.Error(
                                 "Please verify your email first",
                                 ErrorType.GOOGLE_SIGNIN
@@ -69,38 +71,33 @@ class AuthViewModel(
                         }
                     },
                     onFailure = { error ->
-                        // In case of failure, log the error and update the state
-                        val errorMessage = error.message ?: "Google authentication failed"
-                        Log.e("GoogleSignInError", errorMessage)
-
+                        Log.e("GoogleSignInError", error.message ?: "Google authentication failed")
                         _authState.value = AuthState.Error(
-                            errorMessage,
+                            error.message ?: "Google authentication failed",
                             ErrorType.GOOGLE_SIGNIN
                         )
                     }
                 )
             } catch (e: Exception) {
-                // Catch unexpected errors during the Google Sign-In process
-                val errorMessage = "Error during Google sign-in: ${e.message}"
-                Log.e("GoogleSignInError", errorMessage)
-
+                Log.e("GoogleSignInError", e.message ?: "Unknown error")
                 _authState.value = AuthState.Error(
-                    errorMessage,
+                    "Error during Google sign-in: ${e.message}",
                     ErrorType.GOOGLE_SIGNIN
                 )
             }
         }
     }
 
+    /** Sign in with email and password */
     fun signIn(email: String, password: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             val result = authManager.signInWithEmailAndPassword(email, password)
             result.fold(
-                onSuccess = {
-                    it?.let { user ->
-                        if (user.isEmailVerified) {
-                            _authState.value = AuthState.LoginSuccess(user)
+                onSuccess = { user ->
+                    user?.let {
+                        if (it.isEmailVerified) {
+                            _authState.value = AuthState.LoginSuccess(it)
                         } else {
                             _authState.value = AuthState.Error(
                                 "Please verify your email first",
@@ -108,21 +105,25 @@ class AuthViewModel(
                             )
                         }
                     } ?: run {
-                        _authState.value = AuthState.Error("User not found", ErrorType.LOGIN)
+                        _authState.value = AuthState.Error(
+                            "User not found",
+                            ErrorType.LOGIN
+                        )
                     }
                 },
                 onFailure = { error ->
-                    val errorMessage = when (error) {
+                    val message = when (error) {
                         is FirebaseAuthInvalidUserException -> "Account not found. Please sign up."
                         is FirebaseAuthInvalidCredentialsException -> "Invalid credentials. Please try again."
                         else -> error.message ?: "Login failed"
                     }
-                    _authState.value = AuthState.Error(errorMessage, ErrorType.LOGIN)
+                    _authState.value = AuthState.Error(message, ErrorType.LOGIN)
                 }
             )
         }
     }
 
+    /** Sign up a new user */
     fun signUp(name: String, email: String, password: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
@@ -131,24 +132,24 @@ class AuthViewModel(
                 onSuccess = { user ->
                     user?.let {
                         _authState.value = AuthState.SignupSuccess(it)
-                        // Optionally send email verification
                         it.sendEmailVerification()
                     } ?: run {
                         _authState.value = AuthState.Error("User creation failed", ErrorType.SIGNUP)
                     }
                 },
                 onFailure = { error ->
-                    val errorMessage = when (error) {
+                    val message = when (error) {
                         is FirebaseAuthUserCollisionException -> "Email already in use"
                         is FirebaseAuthInvalidCredentialsException -> "Invalid email format"
                         else -> error.message ?: "Signup failed"
                     }
-                    _authState.value = AuthState.Error(errorMessage, ErrorType.SIGNUP)
+                    _authState.value = AuthState.Error(message, ErrorType.SIGNUP)
                 }
             )
         }
     }
 
+    /** Send a password reset email */
     fun sendPasswordResetEmail(email: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
@@ -174,27 +175,44 @@ class AuthViewModel(
         }
     }
 
+    /** Resend email verification */
     fun resendVerificationEmail() {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val result = authManager.resendEmailVerification(currentUser?.email ?: "")
+            val email = currentUser?.email ?: ""
+            if (email.isEmpty()) {
+                _authState.value = AuthState.Error(
+                    "No email available for verification",
+                    ErrorType.GENERAL
+                )
+                return@launch
+            }
+
+            val result = authManager.resendEmailVerification(email)
             result.fold(
                 onSuccess = {
-                    _authState.value = AuthState.Error("Verification email sent. Please check your inbox.", ErrorType.GENERAL)
+                    _authState.value = AuthState.Error(
+                        "Verification email sent. Please check your inbox.",
+                        ErrorType.GENERAL
+                    )
                 },
                 onFailure = {
-                    _authState.value = AuthState.Error("Failed to send verification email", ErrorType.GENERAL)
+                    _authState.value = AuthState.Error(
+                        "Failed to send verification email",
+                        ErrorType.GENERAL
+                    )
                 }
             )
         }
     }
 
-
+    /** Sign out the current user */
     fun signOut() {
         authManager.signOut()
         _authState.value = AuthState.Idle
     }
 
+    /** Clear the current error state */
     fun clearError() {
         if (_authState.value is AuthState.Error) {
             _authState.value = AuthState.Idle
