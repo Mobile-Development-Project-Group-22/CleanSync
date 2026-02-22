@@ -1,8 +1,8 @@
-// AppNavHost.kt
 package com.example.cleansync.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -16,25 +16,30 @@ import com.example.cleansync.ui.theme.ThemeMode
 @Composable
 fun AppNavHost(
     navController: NavHostController,
+    startDestination: String,
     authViewModel: AuthViewModel,
-    notificationViewModel: NotificationViewModel,
     bookingViewModel: BookingViewModel,
+    notificationViewModel: NotificationViewModel,
     currentThemeMode: ThemeMode,
     onThemeSelected: (ThemeMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.LoginScreen.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
-        // --- Auth ---
+
+        // ------------------------
+        // Authentication
+        // ------------------------
         composable(Screen.LoginScreen.route) {
             LoginScreen(
                 authViewModel = authViewModel,
                 onLoginSuccess = {
                     navController.navigate(Screen.HomeScreen.route) {
-                        popUpTo(Screen.LoginScreen.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
                 onNavigateToSignup = { navController.navigate(Screen.SignupScreen.route) },
@@ -74,12 +79,14 @@ fun AppNavHost(
             )
         }
 
-        // --- Home ---
+        // ------------------------
+        // Home
+        // ------------------------
         composable(Screen.HomeScreen.route) {
             HomeScreen(
                 authViewModel = authViewModel,
-                notificationViewModel = notificationViewModel,
                 bookingViewModel = bookingViewModel,
+                notificationViewModel = notificationViewModel,
                 onNavigateToBooking = { navController.navigate(Screen.BookingStartScreen.route) },
                 onNavigateToNotifications = { navController.navigate(Screen.NotificationScreen.route) },
                 onNavigateToProfile = { navController.navigate(Screen.ProfileScreen.route) },
@@ -87,19 +94,24 @@ fun AppNavHost(
                     navController.navigate(Screen.MyBookingsScreen.createRoute(bookingId))
                 },
                 onLogout = {
+                    authViewModel.signOut()
                     navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.HomeScreen.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
-        // --- Notifications ---
+        // ------------------------
+        // Notifications
+        // ------------------------
         composable(Screen.NotificationScreen.route) {
             NotificationScreen(viewModel = notificationViewModel)
         }
 
-        // --- Bookings ---
+        // ------------------------
+        // Bookings
+        // ------------------------
         composable(Screen.MyBookingsScreen.route) { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId")
             MyBookingsScreen(
@@ -123,25 +135,33 @@ fun AppNavHost(
             )
         }
 
-        composable(Screen.BookingConfirmationScreen.route) {
-            BookingConfirmationScreen(bookingViewModel = bookingViewModel, onReturnHome = {
-                navController.navigate(Screen.HomeScreen.route) {
-                    popUpTo(Screen.BookingStartScreen.route) { inclusive = true }
-                }
-            })
-        }
-
         composable(Screen.BookingFormScreen.route) {
-            BookingFormScreen(bookingViewModel = bookingViewModel, onBookingDone = {
-                navController.navigate(Screen.BookingConfirmationScreen.route) {
-                    popUpTo(Screen.BookingFormScreen.route) { inclusive = true }
+            BookingFormScreen(
+                bookingViewModel = bookingViewModel,
+                onBookingDone = {
+                    navController.navigate(Screen.BookingConfirmationScreen.route) {
+                        popUpTo(Screen.BookingFormScreen.route) { inclusive = true }
+                    }
                 }
-            })
+            )
         }
 
-        // --- Profile & Settings ---
+        composable(Screen.BookingConfirmationScreen.route) {
+            BookingConfirmationScreen(
+                bookingViewModel = bookingViewModel,
+                onReturnHome = {
+                    navController.navigate(Screen.HomeScreen.route) {
+                        popUpTo(Screen.BookingStartScreen.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ------------------------
+        // Profile & Settings
+        // ------------------------
         composable(Screen.ProfileScreen.route) {
-            val profileViewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val profileViewModel: ProfileViewModel = viewModel()
             ProfileScreen(
                 profileViewModel = profileViewModel,
                 preferencesViewModel = NotificationSettingsViewModel(),
@@ -150,50 +170,41 @@ fun AppNavHost(
                 onLogout = {
                     authViewModel.signOut()
                     navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
-                    }
-                },
-                onNavigateToLogin = {
-                    navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 },
                 onNavigateToBookings = {
-                    navController.navigate(Screen.MyBookingsScreen.createRoute(null)) {
-                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.MyBookingsScreen.createRoute(null))
                 },
                 onNavigateToPastBookings = {
                     navController.navigate(Screen.PastBookingsScreen.route)
                 },
                 onNavigateToSettings = {
-                    navController.navigate(Screen.SettingScreen.route) {
-                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.SettingScreen.route)
                 },
                 onNavigateToSupport = {
-                    navController.navigate(Screen.SupportScreen.route) {
-                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.SupportScreen.route)
                 },
                 onNavigateToContact = {
-                    navController.navigate(Screen.ContactUs.route) {
-                        popUpTo(Screen.ProfileScreen.route) { inclusive = true }
+                    navController.navigate(Screen.ContactUs.route)
+                },
+                onNavigateToLogin = {
+                    authViewModel.signOut()
+                    navController.navigate(Screen.LoginScreen.route) {
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
         composable(Screen.PastBookingsScreen.route) {
-            val profileViewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+            val profileViewModel: ProfileViewModel = viewModel()
             PastBookingsScreen(
                 profileViewModel = profileViewModel,
                 bookingViewModel = bookingViewModel,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToConfirmation = {
-                    navController.navigate(Screen.BookingConfirmationScreen.route) {
-                        popUpTo(Screen.PastBookingsScreen.route) { inclusive = true }
-                    }
+                    navController.navigate(Screen.BookingConfirmationScreen.route)
                 }
             )
         }
@@ -206,14 +217,17 @@ fun AppNavHost(
                 onThemeSelected = onThemeSelected,
                 onBackClick = { navController.navigate(Screen.ProfileScreen.route) },
                 onNavigateToLogin = {
+                    authViewModel.signOut()
                     navController.navigate(Screen.LoginScreen.route) {
-                        popUpTo(Screen.SettingScreen.route) { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
 
-        // --- Contact & Support ---
+        // ------------------------
+        // Contact & Support
+        // ------------------------
         composable(Screen.ContactUs.route) {
             ContactUs(
                 onBackClick = { navController.navigate(Screen.ProfileScreen.route) },
@@ -226,6 +240,5 @@ fun AppNavHost(
                 onBackClick = { navController.navigate(Screen.ContactUs.route) }
             )
         }
-
     }
 }
